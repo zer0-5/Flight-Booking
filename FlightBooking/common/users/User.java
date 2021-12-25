@@ -3,14 +3,14 @@ package common.users;
 import java.util.UUID;
 
 public abstract class User {
-  private UUID id;
-  private String username;
-  private String password;
+  final UUID id;
+  final String username;
+  final String password;
 
   public User(String username, String password) {
     this.password = password;
     this.username = username;
-    //this.id = new UUID(  password,username);
+    this.id = UUID.randomUUID();
   }
 
   //abstract void login();

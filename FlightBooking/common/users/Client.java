@@ -5,7 +5,7 @@ import java.util.Set;
 
 public class Client extends User {
 
-    private Set<String> notifications;
+    private final Set<String> notifications;
 
     public Client(String username, String password) {
         super(username, password);
