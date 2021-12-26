@@ -61,11 +61,6 @@ public class AirportSystem {
     }
 
     public void cancelFlightsByDate(LocalDate date) {
-        this.canceledDays.add(date);
-        Set<Flight> flights = this.flightsByDate.remove(date);
-        for (Flight elem : flights) {
-            for (Reservation reservation : elem.getReservations())
-                removeReservation(reservation.reserveCode, reservation.client);
-        }
+
     }
 }
