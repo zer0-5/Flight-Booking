@@ -1,31 +1,33 @@
 package airport;
 
 import java.time.LocalDate;
-import java.util.*;
+import java.util.UUID;
 
 /**
  * Voo individual, pronto para ser realizado, ou já realizado.
  */
 public class Flight {
-  public final UUID id;
-  public final Route route;
-  public final LocalDate date;
-  //private final Set<UUID> clients; // Association each client to the reservation code of his flight.
-  private final Set<Reservation> reservations; // Association each client to the reservation code of his flight.
+    // TODO: Lock;
+    public final UUID id;
+    public final Route route;
+    public final LocalDate date;
+    private int remainingCapacity;
+    // private final Set<UUID> clients; // Association each client to the reservation code of his flight.
+    // private final Set<Reservation> reservations; // Association each client to the reservation code of his flight.
 
-  public Flight(UUID id, Route connection, LocalDate date) {
-    this.id = id;
-    this.route = connection;
-    this.date = date;
-    this.reservations = new HashSet<>();
-  }
+    public Flight(UUID id, Route route, LocalDate date) {
+        this.id = id;
+        this.route = route;
+        this.date = date;
+        this.remainingCapacity = route.capacity;
+    }
 
-  public void removeReservation(Reservation toRemove){
-    reservations.remove(toRemove);
-  }
+    public void addCapacity() {
+        remainingCapacity--;
+    }
 
-  // TODO CLONE??
-  public Set<Reservation> getReservations() {
-    return reservations;
-  }
+    public void removeCapacity() {
+        //if (remainingCapacity == 0) throw Cenas;
+        remainingCapacity++;
+    }
 }
