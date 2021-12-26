@@ -1,4 +1,4 @@
-package common.users;
+package users;
 
 public class Admin extends User {
 

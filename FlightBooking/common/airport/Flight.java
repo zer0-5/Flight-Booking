@@ -1,4 +1,4 @@
-package common.airport;
+package airport;
 
 import java.time.LocalDate;
 import java.util.*;
@@ -7,9 +7,9 @@ import java.util.*;
  * Voo individual, pronto para ser realizado, ou já realizado.
  */
 public class Flight {
-  final UUID id;
-  final Route route;
-  final LocalDate date;
+  public final UUID id;
+  public final Route route;
+  public final LocalDate date;
   //private final Set<UUID> clients; // Association each client to the reservation code of his flight.
   private final Set<Reservation> reservations; // Association each client to the reservation code of his flight.
 

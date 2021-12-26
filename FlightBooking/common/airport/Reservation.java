@@ -1,11 +1,11 @@
-package common.airport;
+package airport;
 
 import java.util.UUID;
 
 public class Reservation {
-    final UUID reserveCode;
-    final UUID client;
-    final UUID flight;
+    public final UUID reserveCode;
+    public final UUID client;
+    public final UUID flight;
 
     public Reservation(UUID reserveCode, UUID client, UUID flight) {
         this.reserveCode = reserveCode;

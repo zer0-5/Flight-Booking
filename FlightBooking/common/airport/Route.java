@@ -1,4 +1,4 @@
-package common.airport;
+package airport;
 
 import java.util.UUID;
 
