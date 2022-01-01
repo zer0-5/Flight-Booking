@@ -6,25 +6,30 @@ import java.time.LocalDate;
 import java.util.*;
 
 public class AirportSystem {
+    //Associates each city, by name, with the flights that leave that city.
     private final Map<String, Set<Route>> connectionsByCityOrig;
 
+    //Associates each ID to the respective flight
     private final Map<UUID, Flight> flightsById;
+    //Associates each day to the flies that happen in that day.
+    //If a connection exists, but the fly in that day doesn't, then the flight will be created.
+    //We can only have one fligth by connection in each day.
     private final Map<LocalDate, Set<Flight>> flightsByDate;
 
+    //Days cancelled by the adminstrator.
+    //This is used to avoid reservations in cancelled days.
     private final Set<LocalDate> canceledDays;
 
-    //Key -> clientId
-    //private final Map<UUID, Set<UUID>> reservationsByIdClient;
-
+    //Associates each reservation to his id.
     private final Map<UUID, Reservation> reservationsById;
 
-
+    //Constructor.
+    //It starts with empty parameters because they are all inserted by the users.
     public AirportSystem() {
         this.connectionsByCityOrig = new HashMap<>();
         this.flightsById = new HashMap<>();
         this.flightsByDate = new HashMap<>();
         this.canceledDays = new HashSet<>();
-        //this.reservationsByIdClient = new HashMap<>();
         this.reservationsById = new HashMap<>();
     }
 
@@ -45,27 +50,4 @@ public class AirportSystem {
         }
     }
 
-    public boolean cancelOneSeat(UUID ticket, UUID client) {
-        return false;
-        //Flight flight = flightsById.remove(ticket);
-        //if (flight == null) return false;
-        //else {
-        //    this.flightsByDate.remove(flight.date);
-        //    Set<Reservation> reservations = reservationsByIdClient.get(client);
-        //    if (reservations != null) {
-        //        reservations.removeIf(elem -> elem.reserveCode.equals(ticket));
-        //        removeReservation(ticket, client);
-        //        return true;
-        //    } else return false;
-        //}
-    }
-
-    private void removeReservation(UUID reservation, UUID client) {
-        // Set<Reservation> reservations = this.reservationsByIdClient.get(client);
-        // if (reservations != null) reservations.removeIf(elem -> elem.reserveCode.equals(reservation));
-    }
-
-    public void cancelFlightsByDate(LocalDate date) {
-
-    }
 }
