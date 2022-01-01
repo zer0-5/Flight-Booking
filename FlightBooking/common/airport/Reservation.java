@@ -3,6 +3,9 @@ package airport;
 import java.util.Set;
 import java.util.UUID;
 
+/**
+ * Represents the reservation of one or multiple flights.
+ */
 public class Reservation {
     public final UUID reserveCode;
     public final UUID client;
