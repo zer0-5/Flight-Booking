@@ -28,7 +28,7 @@ public class Flight {
 
     /**
      * Association between each reservation code to the flight.
-     *
+     * <p>
      * This is necessary because when a flight is canceled, we need
      * to know all reservations associated to cancel then.
      * Like, if a connection flight is canceled, we need to cancel the flights associated to that connection
@@ -37,9 +37,10 @@ public class Flight {
 
     /**
      * Constructor of the flight.
-     * @param id the id.
+     *
+     * @param id    the id.
      * @param route the route.
-     * @param date the date.
+     * @param date  the date.
      */
     public Flight(UUID id, Route route, LocalDate date) {
         this.id = id;
