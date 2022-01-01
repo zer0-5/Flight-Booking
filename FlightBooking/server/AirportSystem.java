@@ -6,6 +6,7 @@ import java.time.LocalDate;
 import java.util.*;
 
 public class AirportSystem {
+
     /**
      * Associates each city, by name, with the flights that leave that city.
      */
@@ -15,7 +16,7 @@ public class AirportSystem {
      * Associates each ID to the respective flight
      */
     private final Map<UUID, Flight> flightsById;
-    //
+
     /**
      * Associates each day to the flies that happen in that day.
      * If a connection exists, but the fly in that day doesn't, then the flight will be created.

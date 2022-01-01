@@ -16,7 +16,7 @@ public class Route {
      */
     public final String origin;
     /**
-     *     City of arrival of the fligth.
+     * City of arrival of the fligth.
      */
     public final String destination;
     /**
