@@ -11,7 +11,7 @@ import java.util.UUID;
 public class Flight {
     // TODO: Lock;
     public final UUID id;
-    public final Route route;
+    public final airport.Route route;
     public final LocalDate date;
 
     // This is necessary because when a flight is canceled, we need
@@ -25,7 +25,7 @@ public class Flight {
      * @param route the route.
      * @param date the date.
      */
-    public Flight(UUID id, Route route, LocalDate date) {
+    public Flight(UUID id, airport.Route route, LocalDate date) {
         this.id = id;
         this.route = route;
         this.date = date;
