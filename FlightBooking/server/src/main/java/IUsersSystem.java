@@ -15,12 +15,4 @@ public interface IUsersSystem {
      * @param password the user's password.
      */
     void authenticate(String name, String password);
-
-    /**
-     * Authenticates an admin.
-     *
-     * @param name     the admin's name.
-     * @param password the admin's password.
-     */
-    void authenticateAdmin(String name, String password);
 }

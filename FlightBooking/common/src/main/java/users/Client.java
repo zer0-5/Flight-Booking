@@ -1,7 +1,8 @@
 package users;
 
+import java.util.ArrayDeque;
 import java.util.HashSet;
-import java.util.Set;
+import java.util.Queue;
 
 /**
  * Client class.
@@ -11,7 +12,7 @@ public class Client extends User {
     /**
      * Set of the current notifications of the client.
      */
-    private final Set<String> notifications;
+    private final Queue<Notification> notifications;
 
     /**
      * Constructor
@@ -20,6 +21,6 @@ public class Client extends User {
      */
     public Client(String username, String password) {
         super(username, password);
-        this.notifications = new HashSet<>();
+        this.notifications = new ArrayDeque<>();
     }
 }

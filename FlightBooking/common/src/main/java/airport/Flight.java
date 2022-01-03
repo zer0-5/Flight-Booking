@@ -38,12 +38,11 @@ public class Flight {
     /**
      * Constructor of the flight.
      *
-     * @param id    the id.
      * @param route the route.
      * @param date  the date.
      */
-    public Flight(UUID id, Route route, LocalDate date) {
-        this.id = id;
+    public Flight(Route route, LocalDate date) {
+        this.id = UUID.randomUUID();
         this.route = route;
         this.date = date;
         this.reservations = new HashSet<>();
@@ -53,17 +52,19 @@ public class Flight {
      * Adds a reservation to this flight.
      *
      * @param reservationId the id of the reservation.
+     * @return true if this set did not already contain the specified element.
      */
-    public void addReservation(UUID reservationId) {
-        this.reservations.add(reservationId);
+    public boolean addReservation(UUID reservationId) {
+        return this.reservations.add(reservationId);
     }
 
     /**
      * Removes a reservation to this flight.
      *
      * @param reservationId the id of the reservation.
+     * @return true if this set contained the specified element.
      */
-    public void removeReservation(UUID reservationId) {
-        this.reservations.remove(reservationId);
+    public boolean removeReservation(UUID reservationId) {
+        return this.reservations.remove(reservationId);
     }
 }

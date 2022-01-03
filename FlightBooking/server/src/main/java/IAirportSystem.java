@@ -29,7 +29,7 @@ public interface IAirportSystem {
      * @param cities the connections.
      * @param start  the start date of the interval.
      * @param end    the end date of the interval.
-     * @return the reservation's id.
+     * @return       the reservation's id.
      */
     UUID reserveFlight(UUID userId, List<String> cities, LocalDate start, LocalDate end);
 
