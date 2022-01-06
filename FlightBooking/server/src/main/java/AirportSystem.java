@@ -1,15 +1,13 @@
 import airport.Flight;
 import airport.Reservation;
 import airport.Route;
-import exceptions.ReservationDoesNotBelongToTheClientException;
-import exceptions.ReservationNotFoundException;
-import exceptions.RouteAlreadyExistsException;
-import exceptions.RouteDoesntExistException;
+import exceptions.*;
 
 import java.time.LocalDate;
 import java.util.*;
+import java.util.stream.Collectors;
 
-public class AirportSystem {
+public class AirportSystem implements IAirportSystem{
 
     /**
      * Associates each city, by name, with the flights that leave that city.
@@ -63,7 +61,7 @@ public class AirportSystem {
         String origUpperCase = orig.toUpperCase();
         String destUpperCase = dest.toUpperCase();
         Route newRoute = new Route(orig, dest, capacity);
-        if (connectionsByCityOrig.containsKey(orig))
+        if (connectionsByCityOrig.containsKey(origUpperCase))
             if (connectionsByCityOrig.get(origUpperCase).putIfAbsent(destUpperCase,newRoute) != null)
                 throw new RouteAlreadyExistsException();
         else {
@@ -73,8 +71,192 @@ public class AirportSystem {
         }
     }
 
+    /**
+     * Method to get a connection between two cities.
+     *
+     * @param orig     the origin city.
+     * @param dest     the destiny city.
+     * @exception RouteDoesntExistException is launched if this route doesn't exist.
+     */
+    public Route getRoute(String orig, String dest) throws RouteDoesntExistException {
+        String origUpperCase = orig.toUpperCase();
+        String destUpperCase = dest.toUpperCase();
+        Map<String,Route> routesByDestCity = connectionsByCityOrig.get(origUpperCase);
+        if (routesByDestCity == null || routesByDestCity.isEmpty())
+            throw new RouteDoesntExistException();
+        Route route = routesByDestCity.get(destUpperCase);
+        if (route == null)
+            throw new RouteDoesntExistException();
+        return route;
+    }
+
+    /**
+     * Checks if a route is valid.
+     *
+     * @param orig City of departure of the flight.
+     * @param dest City of arrival of the flight.
+     * @return true if this route exists.
+     */
+    private boolean validRoute(String orig, String dest){
+        String origUpperCase = orig.toUpperCase();
+        String destUpperCase = dest.toUpperCase();
+        Map<String,Route> routes = connectionsByCityOrig.get(origUpperCase);
+        if (routes != null ){
+            return routes.containsKey(destUpperCase);
+        }
+        return false;
+    }
+
+    /**
+     * Verifies if a given route can be made through the possible routes.
+     *
+     * @param cities All cities in order of passage
+     * @return true if it's possible to make this trip
+     */
+    private boolean validRoutes(final List<String> cities) {
+        String origCity = null;
+        String destCity;
+        for (String city: cities){
+           if(origCity == null) {
+               origCity = city;
+               continue;
+           }
+           destCity = city;
+           if(!validRoute(origCity,destCity))
+               return false;
+            origCity = city;
+        }
+        return true;
+    }
+
+    /**
+     * Get a valid Flight on the given day, departing from the origin city to the destination city.
+     *
+     * @param date Date we want
+     * @param orig Origin City
+     * @param dest Destination City
+     * @return a Flight
+     * @throws FullFlightException Is launched if the flight is full
+     * @throws FlightDoesntExistYetException Is launched if the flight doesn't exist yet
+     */
+    private Flight getValidFlight(LocalDate date, String orig, String dest)
+            throws FullFlightException, FlightDoesntExistYetException {
+        String origUpperCase = orig.toUpperCase();
+        String destUpperCase = dest.toUpperCase();
+
+        Set<Flight> flightsByCityOrig = this.flightsByDate.get(date);
+
+        for ( Flight flight : flightsByCityOrig ) {
+            if (flight.route.origin.equals(origUpperCase) &&
+                flight.route.destination.equals(destUpperCase)){
+                if (flight.seatAvailable())
+                    return flight;
+                else
+                    throw new FullFlightException();
+            }
+        }
+        throw new FlightDoesntExistYetException();
+    }
+
+    /**
+     * Returns a set of flights that make the trip possible.
+     *
+     * @param cities the connections.
+     * @param start  the start date of the interval.
+     * @param end    the end date of the interval.
+     * @return The available flights
+     * @throws BookingFlightsNotPossibleException if there is no route possible.
+     */
+    private Set<Flight> getRouteFlights(List<String> cities, LocalDate start, LocalDate end)
+            throws BookingFlightsNotPossibleException {
+        String origCity = null;
+        String destCity;
+        int numberFlights = cities.size() - 1;
+        int i = 0;
+        LocalDate dateToSearch = start;
+        Set<Flight> flights = new HashSet<>();
+
+        while( i < numberFlights ) {
+            if (dateToSearch.isAfter(end))
+                throw new BookingFlightsNotPossibleException();
+            if(canceledDays.contains(dateToSearch)) {
+                dateToSearch = dateToSearch.plusDays(1);
+                continue;
+            }
+
+            if (origCity == null) {
+                origCity = cities.get(i); i++;
+                continue;
+            }
+            destCity = cities.get(i);
+
+            try {
+                Flight flight = getValidFlight(dateToSearch,origCity,destCity);
+                flights.add(flight);
+            } catch (FullFlightException e) {
+                dateToSearch = dateToSearch.plusDays(1);
+                continue;
+            } catch (FlightDoesntExistYetException e) {
+                try {
+                    Route route = getRoute(origCity,destCity);
+                    Flight flight = addFlight(route,dateToSearch);
+                    flights.add(flight);
+                } catch (RouteDoesntExistException ignored) {
+                    // FUTURE ATTENTION: Before throw this we need to unlock the flights
+                    throw new BookingFlightsNotPossibleException();
+                }
+            }
+            origCity = destCity; i++;
+        }
+        return flights;
+    }
+
+    /**
+     * Creates and add a flight
+     *
+     * @param route the connection
+     * @param date  the day
+     * @return      the flight
+     */
+    private Flight addFlight(Route route, LocalDate date) {
+        Flight flight = new Flight(route, date);
+        flightsById.putIfAbsent(flight.id,flight);
+        Set<Flight> flights = flightsByDate.get(date);
+        if (flights == null) {
+            flights = new HashSet<>(); flights.add(flight);
+            flightsByDate.put(date, flights);
+        } else
+            flights.add(flight);
+        return flight;
+    }
+
+    /**
+     * Reserves a flight given the connections, in the time interval.
+     *
+     * @param userId the user's id.
+     * @param cities the connections.
+     * @param start  the start date of the interval.
+     * @param end    the end date of the interval.
+     * @return       the reservation's id.
+     */
+    public UUID reserveFlight(UUID userId, List<String> cities, LocalDate start, LocalDate end)
+            throws BookingFlightsNotPossibleException {
+        Set<Flight> flights = getRouteFlights(cities, start, end);
+        Set<UUID> flightIds = flights.stream().map(e->e.id).collect(Collectors.toSet());
+        Reservation reservation = new Reservation(userId,flightIds);
+        for( Flight flight : flights) {
+            try {
+                flight.addReservation(reservation.id);
+            } catch (FullFlightException ignored) {
+                // Shouldn't happen
+                throw new BookingFlightsNotPossibleException();
+            }
+        }
+        return reservation.id;
+    }
+
     //public boolean addReservation(UUID client, LocalDateTime firstDate, LocalDateTime lastDate, List<String> cities) throws RouteDoesntExistException{
-    /* FIXME We need to check if that dates aren't canceled.
+    /* FIXME We need to check if that dates aren't canceled. */
     //    // Routes that connect the cities given in argument.
     //    List<Route> routes;
     //    for (int i = 0; i < cities.size()-1; i++){
@@ -89,7 +271,6 @@ public class AirportSystem {
     //        }
     //    }
     //    //Now we got the routes that can make the connection.
-
     //}
 
     /**
@@ -141,5 +322,17 @@ public class AirportSystem {
             }
         }
         return reservations;
+    }
+
+    /**
+     * Gets the existent routes.
+     *
+     * @return the list of the existent routes.
+     */
+    public List<Route> getRoutes() {
+        return this.connectionsByCityOrig.values()
+                .stream()
+                .flatMap(e -> e.values().stream())
+                .collect(Collectors.toList());
     }
 }
