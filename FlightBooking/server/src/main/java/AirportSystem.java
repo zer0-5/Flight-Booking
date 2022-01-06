@@ -1,6 +1,9 @@
 import airport.Flight;
 import airport.Reservation;
 import airport.Route;
+import exceptions.ReservationDoesNotBelongToTheClientException;
+import exceptions.ReservationNotFoundException;
+import exceptions.RouteDoesntExistException;
 
 import java.time.LocalDate;
 import java.util.*;
@@ -64,4 +67,72 @@ public class AirportSystem {
         }
     }
 
+    //public boolean addReservation(UUID client, LocalDateTime firstDate, LocalDateTime lastDate, List<String> cities) throws RouteDoesntExistException{
+    //    // Routes that connect the cities given in argument.
+    //    List<Route> routes;
+    //    for (int i = 0; i < cities.size()-1; i++){
+    //        //Routes that leave from current city.
+    //        Set<Route> routeFromThisCity = connectionsByCityOrig.get(cities.get(i));
+    //        if (routeFromThisCity == null) throw new RouteDoesntExistException();
+    //        for (Route one : routeFromThisCity){
+    //            if (one.destination.equals(cities.get(i+1)){
+    //                routes.add(one);
+    //                break;
+    //            }
+    //        }
+    //    }
+    //    //Now we got the routes that can make the connection.
+
+    //}
+
+    /**
+     * Cancels a flight.
+     *
+     * @param userId                                        the id of the client
+     * @param reservationId                                 the id of the reservation
+     * @throws ReservationNotFoundException                 is launched if the reservation doesn't exist in the AirportSystem
+     * @throws ReservationDoesNotBelongToTheClientException is launched if the reservation doesn't belong to the given
+     * client
+     * @return the deleted @see airport.Reservation .
+     */
+    public Reservation cancelFlight(UUID userId, UUID reservationId) throws ReservationNotFoundException,
+            ReservationDoesNotBelongToTheClientException{
+        Reservation r = this.reservationsById.remove(reservationId);
+        if (r == null)
+            throw new ReservationNotFoundException();
+        if (r.clientId != userId) {
+            this.reservationsById.put(r.id, r);
+            throw new ReservationDoesNotBelongToTheClientException();
+        }
+
+        for(UUID flightId : r.flightIds)
+            flightsById.get(flightId).removeReservation(reservationId);
+        return r;
+    }
+
+    /**
+     * Cancels a day. Preventing new reservations and canceling the remaining ones from that day.
+     *
+     * @param day the day.
+     * @return all canceled @see airport.Reservation .
+     */
+    public Set<Reservation> cancelDay(LocalDate day) {
+        this.canceledDays.add(day);
+        Set<Reservation> reservations = new HashSet<>();
+        Set<Flight> flights = this.flightsByDate.remove(day);
+        // Maybe thrown an exception when doesn't exist reservations in that day
+        if (flights != null) {
+            for(Flight flight : flights) {
+                // Remove flight from flightsById
+                this.flightsById.remove(flight.id);
+                for(UUID reservationId : flight.reservations) {
+                    // Remove reservation from reservationsById
+                    Reservation reservation = reservationsById.remove(reservationId);
+                    if (reservation != null)
+                        reservations.add(reservation);
+                }
+            }
+        }
+        return reservations;
+    }
 }

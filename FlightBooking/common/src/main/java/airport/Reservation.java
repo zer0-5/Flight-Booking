@@ -23,7 +23,6 @@ public class Reservation {
      * E.g. Lisbon -> Tokyo -> London
      */
     public final Set<UUID> flightIds;
-    // TODO: Adicionar capacidade aos flights depois de apagar a reservation
 
     /**
      * Constructor

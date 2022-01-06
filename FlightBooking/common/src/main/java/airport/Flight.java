@@ -1,5 +1,7 @@
 package airport;
 
+import exceptions.FullFlightException;
+
 import java.time.LocalDate;
 import java.util.HashSet;
 import java.util.Set;
@@ -33,7 +35,7 @@ public class Flight {
      * to know all reservations associated to cancel then.
      * Like, if a connection flight is canceled, we need to cancel the flights associated to that connection
      */
-    private final Set<UUID> reservations;
+    public final Set<UUID> reservations;
 
     /**
      * Constructor of the flight.
@@ -53,9 +55,12 @@ public class Flight {
      *
      * @param reservationId the id of the reservation.
      * @return true if this set did not already contain the specified element.
+     * @exception FullFlightException is launched if aren't seats available.
      */
-    public boolean addReservation(UUID reservationId) {
-        return this.reservations.add(reservationId);
+    public boolean addReservation(UUID reservationId) throws FullFlightException {
+        if (route.capacity > reservations.size())
+            return this.reservations.add(reservationId);
+        throw new FullFlightException();
     }
 
     /**
@@ -66,5 +71,14 @@ public class Flight {
      */
     public boolean removeReservation(UUID reservationId) {
         return this.reservations.remove(reservationId);
+    }
+
+    /**
+     * Checks if there are available seats.
+     *
+     * @return true if there is a seat.
+     */
+    public boolean seatAvailable() {
+        return route.capacity > reservations.size();
     }
 }
