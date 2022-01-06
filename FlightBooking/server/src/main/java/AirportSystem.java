@@ -3,6 +3,7 @@ import airport.Reservation;
 import airport.Route;
 import exceptions.ReservationDoesNotBelongToTheClientException;
 import exceptions.ReservationNotFoundException;
+import exceptions.RouteAlreadyExistsException;
 import exceptions.RouteDoesntExistException;
 
 import java.time.LocalDate;
@@ -13,7 +14,7 @@ public class AirportSystem {
     /**
      * Associates each city, by name, with the flights that leave that city.
      */
-    private final Map<String, Set<Route>> connectionsByCityOrig;
+    private final Map<String, Map<String, Route>> connectionsByCityOrig;
 
     /**
      * Associates each ID to the respective flight
@@ -23,12 +24,12 @@ public class AirportSystem {
     /**
      * Associates each day to the flies that happen in that day.
      * If a connection exists, but the fly in that day doesn't, then the flight will be created.
-     * We can only have one fligth by connection in each day.
+     * We can only have one flight by connection in each day.
      */
     private final Map<LocalDate, Set<Flight>> flightsByDate;
 
     /**
-     * Days cancelled by the adminstrator.
+     * Days cancelled by the administrator.
      * This is used to avoid reservations in cancelled days.
      */
     private final Set<LocalDate> canceledDays;
@@ -56,26 +57,32 @@ public class AirportSystem {
      * @param orig     the origin city.
      * @param dest     the destiny city.
      * @param capacity the capacity of each flight.
+     * @exception RouteAlreadyExistsException is launched if this route already exists
      */
-    public void addRoute(String orig, String dest, int capacity) {
-        Route newConn = new Route(orig, dest, capacity);
-        if (connectionsByCityOrig.containsKey(orig)) connectionsByCityOrig.get(orig).add(newConn);
+    public void addRoute(String orig, String dest, int capacity) throws RouteAlreadyExistsException {
+        String origUpperCase = orig.toUpperCase();
+        String destUpperCase = dest.toUpperCase();
+        Route newRoute = new Route(orig, dest, capacity);
+        if (connectionsByCityOrig.containsKey(orig))
+            if (connectionsByCityOrig.get(origUpperCase).putIfAbsent(destUpperCase,newRoute) != null)
+                throw new RouteAlreadyExistsException();
         else {
-            Set<Route> toInsert = new HashSet<>();
-            toInsert.add(new Route(orig, dest, capacity));
-            connectionsByCityOrig.put(orig, toInsert);
+            HashMap<String,Route> toInsert = new HashMap<>();
+            toInsert.put(destUpperCase ,new Route(orig, dest, capacity));
+            connectionsByCityOrig.put(origUpperCase, toInsert);
         }
     }
 
     //public boolean addReservation(UUID client, LocalDateTime firstDate, LocalDateTime lastDate, List<String> cities) throws RouteDoesntExistException{
+    /* FIXME We need to check if that dates aren't canceled.
     //    // Routes that connect the cities given in argument.
     //    List<Route> routes;
     //    for (int i = 0; i < cities.size()-1; i++){
     //        //Routes that leave from current city.
-    //        Set<Route> routeFromThisCity = connectionsByCityOrig.get(cities.get(i));
+    //        Set<Route> routeFromThisCity = connectionsByCityOrig.get(cities.get(i).toUpperCase());
     //        if (routeFromThisCity == null) throw new RouteDoesntExistException();
     //        for (Route one : routeFromThisCity){
-    //            if (one.destination.equals(cities.get(i+1)){
+    //            if (one.destination.equals(cities.get(i+1).toUpperCase()){
     //                routes.add(one);
     //                break;
     //            }
