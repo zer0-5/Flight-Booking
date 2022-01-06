@@ -266,6 +266,20 @@ public class AirportSystem implements IAirportSystem{
     }
 
     /**
+     * Cancel the reservation on all flights involved in the given reservation
+     *
+     * @param reservation Reservation to cancel
+     */
+    private void cancelReservation(Reservation reservation){
+        Set<UUID> flightIds = reservation.getFlightIds();
+        for(UUID id : flightIds) {
+            Flight flight = flightsById.get(id);
+            if (flight!=null)
+                flight.removeReservation(reservation.id);
+        }
+    }
+
+    /**
      * Cancels a flight.
      *
      * @param userId                                        the id of the client
@@ -285,8 +299,7 @@ public class AirportSystem implements IAirportSystem{
             throw new ReservationDoesNotBelongToTheClientException();
         }
 
-        for(UUID flightId : reservation.getFlightIds())
-            flightsById.get(flightId).removeReservation(reservationId);
+        cancelReservation(reservation);
         return reservation;
     }
 
@@ -298,7 +311,7 @@ public class AirportSystem implements IAirportSystem{
      */
     public Set<Reservation> cancelDay(LocalDate day) {
         this.canceledDays.add(day);
-        Set<Reservation> reservations = new HashSet<>();
+        Set<Reservation> canceledReservations = new HashSet<>();
         Set<Flight> flights = this.flightsByDate.remove(day);
         // Maybe thrown an exception when doesn't exist reservations in that day
         if (flights != null) {
@@ -308,12 +321,13 @@ public class AirportSystem implements IAirportSystem{
                 for(UUID reservationId : flight.getReservations()) {
                     // Remove reservation from reservationsById
                     Reservation reservation = reservationsById.remove(reservationId);
+                    cancelReservation(reservation);
                     if (reservation != null)
-                        reservations.add(reservation);
+                        canceledReservations.add(reservation);
                 }
             }
         }
-        return reservations;
+        return canceledReservations;
     }
 
     /**
