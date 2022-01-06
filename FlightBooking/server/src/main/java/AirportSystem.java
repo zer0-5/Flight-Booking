@@ -105,7 +105,7 @@ public class AirportSystem {
             throw new ReservationDoesNotBelongToTheClientException();
         }
 
-        for(UUID flightId : r.flightIds)
+        for(UUID flightId : r.getFlightIds())
             flightsById.get(flightId).removeReservation(reservationId);
         return r;
     }
