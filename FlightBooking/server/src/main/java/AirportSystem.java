@@ -50,6 +50,16 @@ public class AirportSystem implements IAirportSystem{
     }
 
     /**
+     * See if a certain date isn't in the canceled days.
+     *
+     * @param dateToSearch Date
+     * @return true if the given date is available.
+     */
+    private boolean validDate(LocalDate dateToSearch) {
+        return canceledDays.contains(dateToSearch);
+    }
+
+    /**
      * Method to add a connection between two cities, with a given capacity.
      *
      * @param orig     the origin city.
@@ -179,7 +189,7 @@ public class AirportSystem implements IAirportSystem{
         while( i < numberFlights ) {
             if (dateToSearch.isAfter(end))
                 throw new BookingFlightsNotPossibleException();
-            if(canceledDays.contains(dateToSearch)) {
+            if(validDate(dateToSearch)) {
                 dateToSearch = dateToSearch.plusDays(1);
                 continue;
             }
@@ -255,24 +265,6 @@ public class AirportSystem implements IAirportSystem{
         return reservation.id;
     }
 
-    //public boolean addReservation(UUID client, LocalDateTime firstDate, LocalDateTime lastDate, List<String> cities) throws RouteDoesntExistException{
-    /* FIXME We need to check if that dates aren't canceled. */
-    //    // Routes that connect the cities given in argument.
-    //    List<Route> routes;
-    //    for (int i = 0; i < cities.size()-1; i++){
-    //        //Routes that leave from current city.
-    //        Set<Route> routeFromThisCity = connectionsByCityOrig.get(cities.get(i).toUpperCase());
-    //        if (routeFromThisCity == null) throw new RouteDoesntExistException();
-    //        for (Route one : routeFromThisCity){
-    //            if (one.destination.equals(cities.get(i+1).toUpperCase()){
-    //                routes.add(one);
-    //                break;
-    //            }
-    //        }
-    //    }
-    //    //Now we got the routes that can make the connection.
-    //}
-
     /**
      * Cancels a flight.
      *
@@ -285,17 +277,17 @@ public class AirportSystem implements IAirportSystem{
      */
     public Reservation cancelFlight(UUID userId, UUID reservationId) throws ReservationNotFoundException,
             ReservationDoesNotBelongToTheClientException{
-        Reservation r = this.reservationsById.remove(reservationId);
-        if (r == null)
+        Reservation reservation = this.reservationsById.remove(reservationId);
+        if (reservation == null)
             throw new ReservationNotFoundException();
-        if (r.clientId != userId) {
-            this.reservationsById.put(r.id, r);
+        if (reservation.clientId != userId) {
+            this.reservationsById.put(reservation.id, reservation);
             throw new ReservationDoesNotBelongToTheClientException();
         }
 
-        for(UUID flightId : r.getFlightIds())
+        for(UUID flightId : reservation.getFlightIds())
             flightsById.get(flightId).removeReservation(reservationId);
-        return r;
+        return reservation;
     }
 
     /**
