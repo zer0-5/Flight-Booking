@@ -38,8 +38,9 @@ public class Reservation {
     }
 
     /**
+     * Return all flight ids from this reservation.
      *
-     * @return
+     * @return Flight ids
      */
     public Set<UUID> getFlightIds() {
         return new HashSet<>(flightIds);
