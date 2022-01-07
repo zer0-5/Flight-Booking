@@ -71,13 +71,15 @@ public class AirportSystem implements IAirportSystem{
         String origUpperCase = orig.toUpperCase();
         String destUpperCase = dest.toUpperCase();
         Route newRoute = new Route(orig, dest, capacity);
-        if (connectionsByCityOrig.containsKey(origUpperCase))
-            if (connectionsByCityOrig.get(origUpperCase).putIfAbsent(destUpperCase,newRoute) != null)
+        Map<String,Route> connectionsByCityDest = connectionsByCityOrig.get(origUpperCase);
+        if (connectionsByCityDest != null){
+            if ( connectionsByCityDest.putIfAbsent(destUpperCase,newRoute) != null)
                 throw new RouteAlreadyExistsException();
+        }
         else {
-            HashMap<String,Route> toInsert = new HashMap<>();
-            toInsert.put(destUpperCase ,new Route(orig, dest, capacity));
-            connectionsByCityOrig.put(origUpperCase, toInsert);
+            connectionsByCityDest = new HashMap<>();
+            connectionsByCityDest.put(destUpperCase , newRoute);
+            connectionsByCityOrig.put(origUpperCase, connectionsByCityDest);
         }
     }
 
