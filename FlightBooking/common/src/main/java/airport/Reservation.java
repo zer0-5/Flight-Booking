@@ -1,5 +1,6 @@
 package airport;
 
+import java.util.HashSet;
 import java.util.Set;
 import java.util.UUID;
 
@@ -22,8 +23,7 @@ public class Reservation {
      * Flights with the connections of the reservation.
      * E.g. Lisbon -> Tokyo -> London
      */
-    public final Set<UUID> flightIds;
-    // TODO: Adicionar capacidade aos flights depois de apagar a reservation
+    private final Set<UUID> flightIds;
 
     /**
      * Constructor
@@ -35,5 +35,14 @@ public class Reservation {
         this.id = UUID.randomUUID();
         this.clientId = clientId;
         this.flightIds = flightsIds;
+    }
+
+    /**
+     * Return all flight ids from this reservation.
+     *
+     * @return Flight ids
+     */
+    public Set<UUID> getFlightIds() {
+        return new HashSet<>(flightIds);
     }
 }

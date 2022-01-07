@@ -4,6 +4,7 @@ import airport.Flight;
 
 import java.time.LocalDate;
 import java.util.List;
+import java.util.Set;
 import java.util.UUID;
 
 public interface IAirportSystem {
@@ -14,15 +15,17 @@ public interface IAirportSystem {
      * @param origin   the origin city.
      * @param destiny  the destiny city.
      * @param capacity the route capacity.
+     * @exception RouteAlreadyExistsException is launched if this route already exists
      */
-    void addRoute(String origin, String destiny, int capacity);
+    void addRoute(String origin, String destiny, int capacity) throws RouteAlreadyExistsException;
 
     /**
      * Cancels a day. Preventing new reservations and canceling the remaining ones from that day.
      *
      * @param day the day.
+     * @return all canceled @see airport.Reservation .
      */
-    void cancelDay(LocalDate day);
+    Set<Reservation> cancelDay(LocalDate day);
 
     /**
      * Reserves a flight given the connections, in the time interval.
@@ -32,21 +35,45 @@ public interface IAirportSystem {
      * @param start  the start date of the interval.
      * @param end    the end date of the interval.
      * @return       the reservation's id.
+     * @throws BookingFlightsNotPossibleException if there is no route possible.
      */
-    UUID reserveFlight(UUID userId, List<String> cities, LocalDate start, LocalDate end);
+    UUID reserveFlight(UUID userId, List<String> cities, LocalDate start, LocalDate end)
+            throws BookingFlightsNotPossibleException;
 
     /**
      * Cancels a flight.
      *
-     * @param userId        the user's id.
-     * @param reservationId the reservation's id.
+     * @param userId                                        the id of the client
+     * @param reservationId                                 the id of the reservation
+     * @throws ReservationNotFoundException                 is launched if the reservation doesn't exist in the AirportSystem
+     * @throws ReservationDoesNotBelongToTheClientException is launched if the reservation doesn't belong to the given
+     * client
+     * @return the deleted @see airport.Reservation .
      */
-    void cancelFlight(UUID userId, UUID reservationId);
+     Reservation cancelFlight(UUID userId, UUID reservationId) throws ReservationNotFoundException,
+            ReservationDoesNotBelongToTheClientException;
 
     /**
-     * Gets the existent flights.
+     * Gets the existent routes.
      *
-     * @return the list of the existent flights.
+     * @return the list of the existent routes.
      */
-    List<Flight> getFlights();
+    List<Route> getRoutes();
+
+
+    /**
+     * Registers a user into the system.
+     *
+     * @param user     the user
+     */
+    void register(User user) throws UsernameAlreadyExistsException;
+
+    /**
+     * Authenticates a user.
+     *
+     * @param name     the user's name.
+     * @param password the user's password.
+     * @return User
+     */
+    public User authenticate(String name, String password) throws UserNotFoundException, InvalidCredentialsException;
 }
