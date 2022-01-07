@@ -8,19 +8,14 @@ import java.util.UUID;
 public abstract class User {
 
     /**
-     * The user's id.
-     */
-    final UUID id;
-
-    /**
      * Username.
      */
-    final String username;
+    private final String username;
 
     /**
      * Password.
      */
-    final String password;
+    private final String password;
 
     /**
      * Constructor
@@ -30,8 +25,22 @@ public abstract class User {
     public User(String username, String password) {
         this.password = password;
         this.username = username;
-        this.id = UUID.randomUUID();
     }
 
-    //abstract void login();
+    /**
+     * Checks if the password given is valid to this user.
+     * @param password Password to check.
+     * @return Is password is correct.
+     */
+    public boolean validPassword(String password) {
+        return this.password.equals(password);
+    }
+
+    /**
+     * Get the username of this user.
+     * @return Username of this object.
+     */
+    public String getUsername() {
+        return username;
+    }
 }

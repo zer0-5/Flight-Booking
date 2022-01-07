@@ -23,4 +23,16 @@ public class Client extends User {
         super(username, password);
         this.notifications = new ArrayDeque<>();
     }
+
+    public boolean emptyNotifications(){
+        return notifications.isEmpty();
+    }
+
+    public Notification removeNotification() {
+        return notifications.remove();
+    }
+
+    public void addNotification(Notification notification) {
+        notifications.add(notification);
+    }
 }

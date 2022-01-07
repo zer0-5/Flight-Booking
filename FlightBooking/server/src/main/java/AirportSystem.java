@@ -2,12 +2,18 @@ import airport.Flight;
 import airport.Reservation;
 import airport.Route;
 import exceptions.*;
+import users.User;
 
 import java.time.LocalDate;
 import java.util.*;
 import java.util.stream.Collectors;
 
-public class AirportSystem implements IAirportSystem{
+public class AirportSystem implements IAirportSystem {
+
+    /**
+     * Associates ID to the respective User
+     */
+    private final Map<String, User> usersById;
 
     /**
      * Associates each city, by name, with the flights that leave that city.
@@ -42,6 +48,7 @@ public class AirportSystem implements IAirportSystem{
      * It starts with empty parameters because they are all inserted by the users.
      */
     public AirportSystem() {
+        this.usersById = new HashMap<>();
         this.connectionsByCityOrig = new HashMap<>();
         this.flightsById = new HashMap<>();
         this.flightsByDate = new HashMap<>();
@@ -342,5 +349,36 @@ public class AirportSystem implements IAirportSystem{
                 .stream()
                 .flatMap(e -> e.values().stream())
                 .collect(Collectors.toList());
+    }
+
+
+    /**
+     * Registers a user into the system.
+     *
+     * @param user     the user
+     */
+    public void register(User user) throws UsernameAlreadyExistsException {
+        String username = user.getUsername();
+        if (usersById.containsKey(username))
+            throw new UsernameAlreadyExistsException();
+        usersById.put(username, user);
+    }
+
+    /**
+     * Authenticates a user.
+     *
+     * @param name     the user's name.
+     * @param password the user's password.
+     * @return User
+     */
+    public User authenticate(String name, String password)
+            throws UserNotFoundException, InvalidCredentialsException {
+        User user = usersById.get(name);
+        if (user == null)
+            throw new UserNotFoundException();
+
+        if (!user.validPassword(password))
+            throw new InvalidCredentialsException();
+        return user;
     }
 }

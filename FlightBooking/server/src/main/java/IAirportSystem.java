@@ -1,9 +1,7 @@
 import airport.Reservation;
 import airport.Route;
-import exceptions.BookingFlightsNotPossibleException;
-import exceptions.ReservationDoesNotBelongToTheClientException;
-import exceptions.ReservationNotFoundException;
-import exceptions.RouteAlreadyExistsException;
+import exceptions.*;
+import users.User;
 
 import java.time.LocalDate;
 import java.util.List;
@@ -62,4 +60,21 @@ public interface IAirportSystem {
      * @return the list of the existent routes.
      */
     List<Route> getRoutes();
+
+
+    /**
+     * Registers a user into the system.
+     *
+     * @param user     the user
+     */
+    void register(User user) throws UsernameAlreadyExistsException;
+
+    /**
+     * Authenticates a user.
+     *
+     * @param name     the user's name.
+     * @param password the user's password.
+     * @return User
+     */
+    public User authenticate(String name, String password) throws UserNotFoundException, InvalidCredentialsException;
 }

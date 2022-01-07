@@ -11,7 +11,6 @@ import java.util.UUID;
  * Represents a flight.
  */
 public class Flight {
-    // TODO: Lock;
 
     /**
      * Id of the flight.
