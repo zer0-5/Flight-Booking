@@ -36,7 +36,7 @@ public class Flight {
      * to know all reservations associated to cancel then.
      * Like, if a connection flight is canceled, we need to cancel the flights associated to that connection
      */
-    public final Set<UUID> reservations;
+    private final Set<UUID> reservations;
 
     /**
      * Constructor of the flight.
@@ -72,6 +72,15 @@ public class Flight {
      */
     public boolean removeReservation(UUID reservationId) {
         return this.reservations.remove(reservationId);
+    }
+
+    /**
+     * Get all reservation's ids on the flight
+     *
+     * @return reservation's ids
+     */
+    public Set<UUID> getReservations() {
+        return new HashSet<>(reservations);
     }
 
     /**
