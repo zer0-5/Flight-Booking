@@ -1,5 +1,7 @@
 package users;
 
+import encryption.BCrypt;
+
 import java.util.UUID;
 
 /**
@@ -29,7 +31,7 @@ public abstract class User {
      */
     public User(String username, String password) {
         this.id = UUID.randomUUID();
-        this.password = password;
+        this.password = BCrypt.hashpw(password, BCrypt.gensalt());
         this.username = username;
     }
 
@@ -39,7 +41,7 @@ public abstract class User {
      * @return Is password is correct.
      */
     public boolean validPassword(String password) {
-        return this.password.equals(password);
+        return BCrypt.checkpw(password,this.password);
     }
 
     /**
@@ -64,6 +66,6 @@ public abstract class User {
      * @param newPassword new password.
      */
     public void changerUserPassword(String newPassword){
-        this.password = newPassword;
+        this.password = BCrypt.hashpw(newPassword, BCrypt.gensalt());
     }
 }

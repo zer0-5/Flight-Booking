@@ -12,6 +12,8 @@ import java.util.stream.Collectors;
 
 public class AirportSystem implements IAirportSystem {
 
+    final String secretKey = "ssshhhhhhhhhhh!!!!";
+
     /**
      * Associates ID to the respective User
      */
@@ -419,7 +421,7 @@ public class AirportSystem implements IAirportSystem {
      * @throws UsernameAlreadyExistsException Username already exists.
      */
     public User registerAdmin(String username, String password) throws UsernameAlreadyExistsException {
-        User user = new Admin(username,password);
+        User user = new Admin(username, password);
         register(user);
         return user;
     }
