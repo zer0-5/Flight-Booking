@@ -36,6 +36,8 @@ public class Flight {
      */
     private final Set<UUID> reservations;
 
+    private int currentOcupation;
+
     /**
      * Constructor of the flight.
      *
@@ -43,6 +45,7 @@ public class Flight {
      * @param date  the date.
      */
     public Flight(Route route, LocalDate date) {
+        this.currentOcupation = 0;
         this.id = UUID.randomUUID();
         this.route = route;
         this.date = date;
@@ -69,6 +72,7 @@ public class Flight {
      * @return true if this set contained the specified element.
      */
     public boolean removeReservation(UUID reservationId) {
+        cancelSeat();
         return this.reservations.remove(reservationId);
     }
 
@@ -87,6 +91,18 @@ public class Flight {
      * @return true if there is a seat.
      */
     public boolean seatAvailable() {
-        return route.capacity > reservations.size();
+        return route.capacity > currentOcupation;
+    }
+
+    public void preReservationSeat() throws FullFlightException {
+        if (seatAvailable())
+            currentOcupation++;
+        else
+            throw new FullFlightException();
+    }
+
+    public void cancelSeat() {
+        if (currentOcupation > 0)
+            currentOcupation--;
     }
 }

@@ -26,7 +26,7 @@ public interface IAirportSystem {
      * @param day the day.
      * @return all canceled @see airport.Reservation .
      */
-    Set<Reservation> cancelDay(LocalDate day);
+    Set<Reservation> cancelDay(LocalDate day) throws DayAlreadyCanceledException;
 
     /**
      * Reserves a flight given the connections, in the time interval.
@@ -39,7 +39,7 @@ public interface IAirportSystem {
      * @throws BookingFlightsNotPossibleException if there is no route possible.
      */
     UUID reserveFlight(UUID userId, List<String> cities, LocalDate start, LocalDate end)
-            throws BookingFlightsNotPossibleException;
+            throws BookingFlightsNotPossibleException, FullFlightException;
 
     /**
      * Cancels a flight.
@@ -76,5 +76,5 @@ public interface IAirportSystem {
      * @param password the user's password.
      * @return User
      */
-    public User authenticate(String name, String password) throws UserNotFoundException, InvalidCredentialsException;
+    User authenticate(String name, String password) throws UserNotFoundException, InvalidCredentialsException;
 }

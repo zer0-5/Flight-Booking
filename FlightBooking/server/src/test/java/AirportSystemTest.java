@@ -1,14 +1,17 @@
 import airport.Route;
-import exceptions.RouteAlreadyExistsException;
-import exceptions.RouteDoesntExistException;
+import exceptions.*;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
+import org.junit.jupiter.params.provider.ValueSource;
 
+import java.time.LocalDate;
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
-import java.util.Locale;
+import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -39,8 +42,6 @@ class AirportSystemTest {
         try {
             System.out.println("Add route: " + orig + "-> " + dest + " ("+ capacity +")");
             airportSystem.addRoute(orig, dest, capacity);
-            List<Route> list = airportSystem.getRoutes();
-            assert list.size() == 1;
         } catch (RouteAlreadyExistsException e) {
             fail();
         }
@@ -49,7 +50,6 @@ class AirportSystemTest {
     @ParameterizedTest
     @CsvSource({"Lisbon,London,30", "Lisbon,London,23" ,"LiSBon,London,30", "Lisbon,LOndoN,30", "LISbon,lonDOn,21"})
     void routeAlreadyExistException(String orig,String dest, int capacity) {
-        System.out.println("Add route: Lisbon -> London (30)");
         addRoute("Lisbon","London",30);
         try {
             System.out.println("TRY: Add route: " + orig + "-> " + dest + " ("+ capacity +")");
@@ -102,22 +102,126 @@ class AirportSystemTest {
 
     @org.junit.jupiter.api.Test
     void reserveFlight() {
-        fail("Not yet implemented");
+        LocalDate date = LocalDate.now();
+        addRoute("London","Paris", 1);
+        addRoute("Paris","Lisbon", 2);
+        List<String> cities1 = new ArrayList<>(Arrays.asList("Paris","Lisbon"));
+        List<String> cities2 = new ArrayList<>(Arrays.asList("London","Paris","Lisbon"));
+        List<String> cities3 = new ArrayList<>(Arrays.asList("LoNdon","ParIs"));
+        List<String> cities4 = new ArrayList<>(Arrays.asList("LoNdon","NOT"));
+        try {
+            airportSystem.reserveFlight(UUID.randomUUID(), cities1, date,date);
+            airportSystem.reserveFlight(UUID.randomUUID(), cities1, date,date);
+        } catch (BookingFlightsNotPossibleException | FullFlightException ignored) {
+            fail();
+        }
+
+        try {
+            System.out.println(airportSystem.reserveFlight(UUID.randomUUID(), cities2, date, date));
+        } catch (FullFlightException ignored) {
+            System.out.println("FAIL: Not added");
+        } catch (BookingFlightsNotPossibleException ignored) {fail();}
+
+        try {
+            airportSystem.reserveFlight(UUID.randomUUID(), cities3, date,date);
+        } catch (FullFlightException | BookingFlightsNotPossibleException e) {
+            fail();
+        }
+
+        try {
+            airportSystem.reserveFlight(UUID.randomUUID(), cities4, date,date);
+            fail();
+        } catch (BookingFlightsNotPossibleException ignored) {}
+        catch (FullFlightException ignored) {fail();}
     }
 
     @org.junit.jupiter.api.Test
     void cancelFlight() {
-        fail("Not yet implemented");
+        LocalDate date = LocalDate.now();
+        addRoute("London","Paris", 1);
+        addRoute("Paris","Lisbon", 2);
+        List<String> cities1 = new ArrayList<>(Arrays.asList("Paris","Lisbon"));
+        List<String> cities2 = new ArrayList<>(Arrays.asList("London","Paris","Lisbon"));
+        UUID client = UUID.randomUUID();
+        UUID reservation1;
+        try {
+            reservation1 = airportSystem.reserveFlight(client, cities1, date,date);
+            airportSystem.reserveFlight(UUID.randomUUID(), cities1, date,date);
+            airportSystem.cancelFlight(client, reservation1);
+
+        } catch (BookingFlightsNotPossibleException | ReservationNotFoundException e) {
+            e.printStackTrace();
+            fail();
+        } catch (ReservationDoesNotBelongToTheClientException e) {
+            e.printStackTrace();
+        } catch (FullFlightException e) {
+            fail();
+        }
+
+        try {
+            airportSystem.reserveFlight(UUID.randomUUID(), cities2, date, date);
+        } catch (BookingFlightsNotPossibleException | FullFlightException ignored) {
+           fail();
+        }
     }
 
     @org.junit.jupiter.api.Test
     void cancelDay() {
-        fail("Not yet implemented");
+        LocalDate date = LocalDate.now();
+        addRoute("London","Paris", 1);
+        addRoute("Paris","Lisbon", 1);
+        List<String> cities1 = new ArrayList<>(Arrays.asList("Paris","Lisbon"));
+        List<String> cities2 = new ArrayList<>(Arrays.asList("London","Paris","Lisbon"));
+        List<String> cities3 = new ArrayList<>(Arrays.asList("London","Paris"));
+        try {
+            airportSystem.reserveFlight(UUID.randomUUID(), cities1, date,date);
+            airportSystem.reserveFlight(UUID.randomUUID(), cities2, date,date.plusDays(1));
+        } catch (BookingFlightsNotPossibleException | FullFlightException ignored) {
+            fail();
+        }
+
+        try {
+            airportSystem.reserveFlight(UUID.randomUUID(), cities1, date.plusDays(1),date.plusDays(1));
+        } catch (BookingFlightsNotPossibleException | FullFlightException e) {
+            System.out.println("Nao adicionou voo la");
+        }
+
+        try {
+            airportSystem.cancelDay(date.plusDays(1));
+            airportSystem.cancelDay(date.plusDays(10));
+        } catch (DayAlreadyCanceledException e) {
+            fail();
+        }
+
+        try {
+            airportSystem.cancelDay(date.plusDays(1));
+            fail();
+        } catch (DayAlreadyCanceledException ignored) {}
+
+        try {
+            airportSystem.reserveFlight(UUID.randomUUID(), cities3, date,date);
+        } catch (BookingFlightsNotPossibleException | FullFlightException e) {
+            fail();
+        }
+
+        try {
+            airportSystem.reserveFlight(UUID.randomUUID(), cities1, date.plusDays(1),date.plusDays(1));
+            fail();
+        } catch (FullFlightException ignored) {}
+        catch (BookingFlightsNotPossibleException ignored) {fail();}
     }
 
-    @org.junit.jupiter.api.Test
-    void getRoutes() {
-        fail("Not yet implemented");
+    @ParameterizedTest
+    @ValueSource(ints = { 1, 1000, 10000})
+    void getRoutes(int N) {
+        for(int i = 0; i < N; i++)
+            addRoute( String.valueOf(i), "London", i);
+
+        for(int i = 0; i < N; i++)
+            addRoute( String.valueOf(i), "Paris", i);
+
+        List<Route> list = airportSystem.getRoutes();
+        assert list.size() == N*2;
     }
 
     @AfterAll

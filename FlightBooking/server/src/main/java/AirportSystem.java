@@ -30,7 +30,7 @@ public class AirportSystem implements IAirportSystem {
      * If a connection exists, but the fly in that day doesn't, then the flight will be created.
      * We can only have one flight by connection in each day.
      */
-    private final Map<LocalDate, Set<Flight>> flightsByDate;
+    private final Map<LocalDate, Map<Route, Flight>> flightsByDate;
 
     /**
      * Days cancelled by the administrator.
@@ -57,12 +57,12 @@ public class AirportSystem implements IAirportSystem {
     }
 
     /**
-     * See if a certain date isn't in the canceled days.
+     * See if a certain date is in the canceled days.
      *
      * @param dateToSearch Date
-     * @return true if the given date is available.
+     * @return true if the given date is canceled.
      */
-    private boolean validDate(LocalDate dateToSearch) {
+    private boolean invalidDate(LocalDate dateToSearch) {
         return canceledDays.contains(dateToSearch);
     }
 
@@ -116,7 +116,7 @@ public class AirportSystem implements IAirportSystem {
      * @param dest City of arrival of the flight.
      * @return true if this route exists.
      */
-    private boolean validRoute(String orig, String dest){
+    private boolean validRoute(String orig, String dest) {
         String origUpperCase = orig.toUpperCase();
         String destUpperCase = dest.toUpperCase();
         Map<String,Route> routes = connectionsByCityOrig.get(origUpperCase);
@@ -148,33 +148,47 @@ public class AirportSystem implements IAirportSystem {
         return true;
     }
 
+
+    /**
+     * TODO
+     *
+     * @param cities All cities in order of passage
+     * @return
+     */
+    private Queue<Route> getRoutesByCities(final List<String> cities) throws RouteDoesntExistException {
+        String origCity = null;
+        String destCity;
+        Queue<Route> routes = new ArrayDeque<>();
+        for (String city: cities){
+            if(origCity == null) {
+                origCity = city;
+                continue;
+            }
+            destCity = city;
+            routes.add(getRoute(origCity,destCity));
+            origCity = city;
+        }
+        return routes;
+    }
+
     /**
      * Get a valid Flight on the given day, departing from the origin city to the destination city.
      *
      * @param date Date we want
-     * @param orig Origin City
-     * @param dest Destination City
+     * @param route Route
      * @return a Flight
-     * @throws FullFlightException Is launched if the flight is full
      * @throws FlightDoesntExistYetException Is launched if the flight doesn't exist yet
      */
-    private Flight getValidFlight(LocalDate date, String orig, String dest)
-            throws FullFlightException, FlightDoesntExistYetException {
-        String origUpperCase = orig.toUpperCase();
-        String destUpperCase = dest.toUpperCase();
+    private Flight getValidFlight(LocalDate date, Route route)
+            throws FlightDoesntExistYetException {
+        Map<Route,Flight> flightsByRoute = this.flightsByDate.get(date);
+        if(flightsByRoute == null)
+            throw new FlightDoesntExistYetException();
+        Flight flight = flightsByRoute.get(route);
+        if (flight == null)
+            throw new FlightDoesntExistYetException();
 
-        Set<Flight> flightsByCityOrig = this.flightsByDate.get(date);
-
-        for ( Flight flight : flightsByCityOrig ) {
-            if (flight.route.origin.equals(origUpperCase) &&
-                flight.route.destination.equals(destUpperCase)){
-                if (flight.seatAvailable())
-                    return flight;
-                else
-                    throw new FullFlightException();
-            }
-        }
-        throw new FlightDoesntExistYetException();
+        return flight;
     }
 
     /**
@@ -186,46 +200,54 @@ public class AirportSystem implements IAirportSystem {
      * @return The available flights
      * @throws BookingFlightsNotPossibleException if there is no route possible.
      */
-    private Set<Flight> getRouteFlights(List<String> cities, LocalDate start, LocalDate end)
-            throws BookingFlightsNotPossibleException {
-        String origCity = null;
-        String destCity;
-        int numberFlights = cities.size() - 1;
-        int i = 0;
+    private Set<Flight> getConnectedFlights(List<String> cities, LocalDate start, LocalDate end)
+            throws BookingFlightsNotPossibleException,  FullFlightException {
         LocalDate dateToSearch = start;
-        Set<Flight> flights = new HashSet<>();
+        Queue<Route> routes;
+        try {
+            routes = getRoutesByCities(cities);
+        } catch (RouteDoesntExistException e) {
+            throw new BookingFlightsNotPossibleException();
+        }
 
-        while( i < numberFlights ) {
-            if (dateToSearch.isAfter(end))
-                throw new BookingFlightsNotPossibleException();
-            if(validDate(dateToSearch)) {
+        Set<Flight> flights = new HashSet<>();
+        int numberFlights = routes.size();
+
+        Route route = routes.remove();
+        int reservedSeats = 0;
+        while ( true ) {
+
+            if (dateToSearch.isAfter(end)) {
+                for(Flight flight : flights)
+                    flight.cancelSeat();
+                throw new FullFlightException();
+            }
+
+            if(invalidDate(dateToSearch)) {
                 dateToSearch = dateToSearch.plusDays(1);
                 continue;
             }
 
-            if (origCity == null) {
-                origCity = cities.get(i); i++;
-                continue;
+            Flight flight;
+            try {
+                flight = getValidFlight(dateToSearch,route);
+            } catch (FlightDoesntExistYetException e) {
+                flight = addFlight(route,dateToSearch);
             }
-            destCity = cities.get(i);
 
             try {
-                Flight flight = getValidFlight(dateToSearch,origCity,destCity);
-                flights.add(flight);
-            } catch (FullFlightException e) {
+                flight.preReservationSeat();
+            } catch (FullFlightException ignored) {
                 dateToSearch = dateToSearch.plusDays(1);
                 continue;
-            } catch (FlightDoesntExistYetException e) {
-                try {
-                    Route route = getRoute(origCity,destCity);
-                    Flight flight = addFlight(route,dateToSearch);
-                    flights.add(flight);
-                } catch (RouteDoesntExistException ignored) {
-                    // FUTURE ATTENTION: Before throw this we need to unlock the flights
-                    throw new BookingFlightsNotPossibleException();
-                }
             }
-            origCity = destCity; i++;
+
+            flights.add(flight);
+            reservedSeats++;
+            if (reservedSeats < numberFlights)
+                route = routes.remove();
+            else
+                break;
         }
         return flights;
     }
@@ -240,12 +262,12 @@ public class AirportSystem implements IAirportSystem {
     private Flight addFlight(Route route, LocalDate date) {
         Flight flight = new Flight(route, date);
         flightsById.putIfAbsent(flight.id,flight);
-        Set<Flight> flights = flightsByDate.get(date);
+        Map<Route,Flight> flights = flightsByDate.get(date);
         if (flights == null) {
-            flights = new HashSet<>(); flights.add(flight);
+            flights = new HashMap<>(); flights.put(route,flight);
             flightsByDate.put(date, flights);
         } else
-            flights.add(flight);
+            flights.put(route,flight);
         return flight;
     }
 
@@ -259,8 +281,8 @@ public class AirportSystem implements IAirportSystem {
      * @return       the reservation's id.
      */
     public UUID reserveFlight(UUID userId, List<String> cities, LocalDate start, LocalDate end)
-            throws BookingFlightsNotPossibleException {
-        Set<Flight> flights = getRouteFlights(cities, start, end);
+            throws BookingFlightsNotPossibleException, FullFlightException {
+        Set<Flight> flights = getConnectedFlights(cities, start, end);
         Set<UUID> flightIds = flights.stream().map(e->e.id).collect(Collectors.toSet());
         Reservation reservation = new Reservation(userId,flightIds);
         for( Flight flight : flights) {
@@ -271,6 +293,7 @@ public class AirportSystem implements IAirportSystem {
                 throw new BookingFlightsNotPossibleException();
             }
         }
+        reservationsById.put(reservation.id,reservation);
         return reservation.id;
     }
 
@@ -318,10 +341,15 @@ public class AirportSystem implements IAirportSystem {
      * @param day the day.
      * @return all canceled @see airport.Reservation .
      */
-    public Set<Reservation> cancelDay(LocalDate day) {
+    public Set<Reservation> cancelDay(LocalDate day) throws DayAlreadyCanceledException {
+        if (invalidDate(day))
+            throw new DayAlreadyCanceledException();
         this.canceledDays.add(day);
         Set<Reservation> canceledReservations = new HashSet<>();
-        Set<Flight> flights = this.flightsByDate.remove(day);
+        Map<Route,Flight> flightsOneDay = this.flightsByDate.remove(day);
+        if (flightsOneDay == null || flightsOneDay.isEmpty())
+            return new HashSet<>();
+        List<Flight> flights = new ArrayList<>(flightsOneDay.values());
         // Maybe thrown an exception when doesn't exist reservations in that day
         if (flights != null) {
             for(Flight flight : flights) {
