@@ -4,7 +4,6 @@ import exceptions.FullFlightException;
 
 import java.time.LocalDate;
 import java.util.HashSet;
-import java.util.Objects;
 import java.util.Set;
 import java.util.UUID;
 
@@ -37,7 +36,7 @@ public class Flight {
      */
     private final Set<UUID> reservations;
 
-    private int currentOcupation;
+    private int currentOccupation;
 
     /**
      * Constructor of the flight.
@@ -46,7 +45,7 @@ public class Flight {
      * @param date  the date.
      */
     public Flight(Route route, LocalDate date) {
-        this.currentOcupation = 0;
+        this.currentOccupation = 0;
         this.id = UUID.randomUUID();
         this.route = route;
         this.date = date;
@@ -92,18 +91,18 @@ public class Flight {
      * @return true if there is a seat.
      */
     public boolean seatAvailable() {
-        return route.capacity > currentOcupation;
+        return route.capacity > currentOccupation;
     }
 
     public void preReservationSeat() throws FullFlightException {
         if (seatAvailable())
-            currentOcupation++;
+            currentOccupation++;
         else
             throw new FullFlightException();
     }
 
     public void cancelSeat() {
-        if (currentOcupation > 0)
-            currentOcupation--;
+        if (currentOccupation > 0)
+            currentOccupation--;
     }
 }

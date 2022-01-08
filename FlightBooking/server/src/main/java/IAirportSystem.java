@@ -1,7 +1,6 @@
 import airport.Reservation;
 import airport.Route;
 import exceptions.*;
-import server.src.main.InvalidRouteException;
 import users.User;
 
 import java.time.LocalDate;
@@ -18,8 +17,10 @@ public interface IAirportSystem {
      * @param destiny  the destiny city.
      * @param capacity the route capacity.
      * @exception RouteAlreadyExistsException is launched if this route already exists
+     * @exception RouteDoesntExistException is launched if this route has the same origin and destination.
      */
-    void addRoute(String origin, String destiny, int capacity) throws RouteAlreadyExistsException, InvalidRouteException;
+    void addRoute(String origin, String destiny, int capacity) throws RouteAlreadyExistsException,
+            RouteDoesntExistException;
 
     /**
      * Cancels a day. Preventing new reservations and canceling the remaining ones from that day.
@@ -37,10 +38,12 @@ public interface IAirportSystem {
      * @param start  the start date of the interval.
      * @param end    the end date of the interval.
      * @return       the reservation's id.
-     * @throws BookingFlightsNotPossibleException if there is no route possible.
+     * @throws BookingFlightsNotPossibleException This can happen because the day is cancel,
+     *                                              or because the possible flights are full.
+     * @throws RouteDoesntExistException if there is no route possible.
      */
     UUID reserveFlight(UUID userId, List<String> cities, LocalDate start, LocalDate end)
-            throws BookingFlightsNotPossibleException, FullFlightException;
+            throws BookingFlightsNotPossibleException, RouteDoesntExistException;
 
     /**
      * Cancels a flight.
@@ -62,21 +65,46 @@ public interface IAirportSystem {
      */
     List<Route> getRoutes();
 
+    /**
+     *  Registers a client into the system.
+     *
+     * @param username Username
+     * @param password Password
+     * @return Client
+     * @throws UsernameAlreadyExistsException Username already exists.
+     */
+    User registerClient(String username, String password) throws UsernameAlreadyExistsException;
 
     /**
-     * Registers a user into the system.
+     *  Registers an admin into the system.
      *
-     * @param user     the user
+     * @param username Username
+     * @param password Password
+     * @return Admin
+     * @throws UsernameAlreadyExistsException Username already exists.
      */
-    void register(User user) throws UsernameAlreadyExistsException;
+    User registerAdmin(String username, String password) throws UsernameAlreadyExistsException;
 
     /**
      * Authenticates a user.
      *
-     * @param name     the user's name.
+     * @param username     the user's username.
      * @param password the user's password.
      * @return User
      */
-    User authenticate(String name, String password)
+    User authenticate(String username, String password)
             throws UserNotFoundException, InvalidCredentialsException;
+
+    /**
+     * Change password of a user.
+     *
+     * @param username username.
+     * @param oldPassword old password.
+     * @param newPassword new password.
+     */
+    default void changeUserPassword(String username, String oldPassword, String newPassword)
+            throws UserNotFoundException, InvalidCredentialsException {
+        User user = authenticate(username,oldPassword);
+        user.changerUserPassword(newPassword);
+    }
 }
