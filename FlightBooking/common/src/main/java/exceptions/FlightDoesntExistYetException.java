@@ -1,4 +1,4 @@
 package exceptions;
 
-public class FlightDoesntExistYetException extends Exception{
+public class FlightDoesntExistYetException extends Exception {
 }

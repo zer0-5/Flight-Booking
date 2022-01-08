@@ -20,7 +20,7 @@ public class Client implements Runnable {
     private boolean logged_in;
 
     public Client() throws IOException {
-        this.taggedConnection = new TaggedConnection(new Socket(host, PORT));
+        this.taggedConnection = new TaggedConnection(new Socket(host, PORT)); // TODO: Repetir a conexão caso o server não esteja ligado.
         this.in = new Scanner(System.in);
         this.logged_in = false;
     }

@@ -9,9 +9,8 @@ import org.junit.jupiter.params.provider.CsvSource;
 import system.AirportSystem;
 
 import java.util.List;
-import java.util.Locale;
 
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.fail;
 
 class AirportSystemTest {
 
@@ -38,7 +37,7 @@ class AirportSystemTest {
     @CsvSource({"Lisbon,London,30", "London,Paris,1", "Lisbon,Paris,23"})
     public void addRoute(String orig, String dest, int capacity) {
         try {
-            System.out.println("Add route: " + orig + "-> " + dest + " ("+ capacity +")");
+            System.out.println("Add route: " + orig + "-> " + dest + " (" + capacity + ")");
             airportSystem.addRoute(orig, dest, capacity);
             List<Route> list = airportSystem.getRoutes();
             assert list.size() == 1;
@@ -48,12 +47,12 @@ class AirportSystemTest {
     }
 
     @ParameterizedTest
-    @CsvSource({"Lisbon,London,30", "Lisbon,London,23" ,"LiSBon,London,30", "Lisbon,LOndoN,30", "LISbon,lonDOn,21"})
-    void routeAlreadyExistException(String orig,String dest, int capacity) {
+    @CsvSource({"Lisbon,London,30", "Lisbon,London,23", "LiSBon,London,30", "Lisbon,LOndoN,30", "LISbon,lonDOn,21"})
+    void routeAlreadyExistException(String orig, String dest, int capacity) {
         System.out.println("Add route: Lisbon -> London (30)");
-        addRoute("Lisbon","London",30);
+        addRoute("Lisbon", "London", 30);
         try {
-            System.out.println("TRY: Add route: " + orig + "-> " + dest + " ("+ capacity +")");
+            System.out.println("TRY: Add route: " + orig + "-> " + dest + " (" + capacity + ")");
             airportSystem.addRoute(orig, dest, capacity);
         } catch (RouteAlreadyExistsException e) {
             System.out.println("FAIL: Not added");
@@ -66,7 +65,7 @@ class AirportSystemTest {
     @CsvSource({"Lisbon,London,30", "London,Paris,1", "Lisbon,Paris,23"})
     void getRoute(String orig, String dest, int capacity) {
         try {
-            System.out.println("Add route: " + orig + "-> " + dest + " ("+ capacity +")");
+            System.out.println("Add route: " + orig + "-> " + dest + " (" + capacity + ")");
             airportSystem.addRoute(orig, dest, capacity);
             System.out.println("GET route: " + orig + "-> " + dest);
             Route route1 = airportSystem.getRoute(orig, dest);
@@ -92,7 +91,7 @@ class AirportSystemTest {
     @CsvSource({"Lisbon,Paris", "Paris,Lisbon"})
     void routeDoesntExistException(String orig, String dest) {
         System.out.println("Add route: Lisbon -> London (30)");
-        addRoute("Lisbon","London",30);
+        addRoute("Lisbon", "London", 30);
         try {
             System.out.println("GET route: " + orig + "-> " + dest);
             airportSystem.getRoute(orig, dest);

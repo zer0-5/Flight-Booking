@@ -74,20 +74,19 @@ public class AirportSystem implements IAirportSystem {
      * @param orig     the origin city.
      * @param dest     the destiny city.
      * @param capacity the capacity of each flight.
-     * @exception RouteAlreadyExistsException is launched if this route already exists
+     * @throws RouteAlreadyExistsException is launched if this route already exists
      */
     public void addRoute(String orig, String dest, int capacity) throws RouteAlreadyExistsException {
         String origUpperCase = orig.toUpperCase();
         String destUpperCase = dest.toUpperCase();
         Route newRoute = new Route(orig, dest, capacity);
-        Map<String,Route> connectionsByCityDest = connectionsByCityOrig.get(origUpperCase);
-        if (connectionsByCityDest != null){
-            if ( connectionsByCityDest.putIfAbsent(destUpperCase,newRoute) != null)
+        Map<String, Route> connectionsByCityDest = connectionsByCityOrig.get(origUpperCase);
+        if (connectionsByCityDest != null) {
+            if (connectionsByCityDest.putIfAbsent(destUpperCase, newRoute) != null)
                 throw new RouteAlreadyExistsException();
-        }
-        else {
+        } else {
             connectionsByCityDest = new HashMap<>();
-            connectionsByCityDest.put(destUpperCase , newRoute);
+            connectionsByCityDest.put(destUpperCase, newRoute);
             connectionsByCityOrig.put(origUpperCase, connectionsByCityDest);
         }
     }
@@ -95,14 +94,14 @@ public class AirportSystem implements IAirportSystem {
     /**
      * Method to get a connection between two cities.
      *
-     * @param orig     the origin city.
-     * @param dest     the destiny city.
-     * @exception RouteDoesntExistException is launched if this route doesn't exist.
+     * @param orig the origin city.
+     * @param dest the destiny city.
+     * @throws RouteDoesntExistException is launched if this route doesn't exist.
      */
     public Route getRoute(String orig, String dest) throws RouteDoesntExistException {
         String origUpperCase = orig.toUpperCase();
         String destUpperCase = dest.toUpperCase();
-        Map<String,Route> routesByDestCity = connectionsByCityOrig.get(origUpperCase);
+        Map<String, Route> routesByDestCity = connectionsByCityOrig.get(origUpperCase);
         if (routesByDestCity == null || routesByDestCity.isEmpty())
             throw new RouteDoesntExistException();
         Route route = routesByDestCity.get(destUpperCase);
@@ -118,11 +117,11 @@ public class AirportSystem implements IAirportSystem {
      * @param dest City of arrival of the flight.
      * @return true if this route exists.
      */
-    private boolean validRoute(String orig, String dest){
+    private boolean validRoute(String orig, String dest) {
         String origUpperCase = orig.toUpperCase();
         String destUpperCase = dest.toUpperCase();
-        Map<String,Route> routes = connectionsByCityOrig.get(origUpperCase);
-        if (routes != null ){
+        Map<String, Route> routes = connectionsByCityOrig.get(origUpperCase);
+        if (routes != null) {
             return routes.containsKey(destUpperCase);
         }
         return false;
@@ -137,14 +136,14 @@ public class AirportSystem implements IAirportSystem {
     private boolean validRoutes(final List<String> cities) {
         String origCity = null;
         String destCity;
-        for (String city: cities){
-           if(origCity == null) {
-               origCity = city;
-               continue;
-           }
-           destCity = city;
-           if(!validRoute(origCity,destCity))
-               return false;
+        for (String city : cities) {
+            if (origCity == null) {
+                origCity = city;
+                continue;
+            }
+            destCity = city;
+            if (!validRoute(origCity, destCity))
+                return false;
             origCity = city;
         }
         return true;
@@ -157,7 +156,7 @@ public class AirportSystem implements IAirportSystem {
      * @param orig Origin City
      * @param dest Destination City
      * @return a Flight
-     * @throws FullFlightException Is launched if the flight is full
+     * @throws FullFlightException           Is launched if the flight is full
      * @throws FlightDoesntExistYetException Is launched if the flight doesn't exist yet
      */
     private Flight getValidFlight(LocalDate date, String orig, String dest)
@@ -167,9 +166,9 @@ public class AirportSystem implements IAirportSystem {
 
         Set<Flight> flightsByCityOrig = this.flightsByDate.get(date);
 
-        for ( Flight flight : flightsByCityOrig ) {
+        for (Flight flight : flightsByCityOrig) {
             if (flight.route.origin.equals(origUpperCase) &&
-                flight.route.destination.equals(destUpperCase)){
+                    flight.route.destination.equals(destUpperCase)) {
                 if (flight.seatAvailable())
                     return flight;
                 else
@@ -197,37 +196,39 @@ public class AirportSystem implements IAirportSystem {
         LocalDate dateToSearch = start;
         Set<Flight> flights = new HashSet<>();
 
-        while( i < numberFlights ) {
+        while (i < numberFlights) {
             if (dateToSearch.isAfter(end))
                 throw new BookingFlightsNotPossibleException();
-            if(validDate(dateToSearch)) {
+            if (validDate(dateToSearch)) {
                 dateToSearch = dateToSearch.plusDays(1);
                 continue;
             }
 
             if (origCity == null) {
-                origCity = cities.get(i); i++;
+                origCity = cities.get(i);
+                i++;
                 continue;
             }
             destCity = cities.get(i);
 
             try {
-                Flight flight = getValidFlight(dateToSearch,origCity,destCity);
+                Flight flight = getValidFlight(dateToSearch, origCity, destCity);
                 flights.add(flight);
             } catch (FullFlightException e) {
                 dateToSearch = dateToSearch.plusDays(1);
                 continue;
             } catch (FlightDoesntExistYetException e) {
                 try {
-                    Route route = getRoute(origCity,destCity);
-                    Flight flight = addFlight(route,dateToSearch);
+                    Route route = getRoute(origCity, destCity);
+                    Flight flight = addFlight(route, dateToSearch);
                     flights.add(flight);
                 } catch (RouteDoesntExistException ignored) {
                     // FUTURE ATTENTION: Before throw this we need to unlock the flights
                     throw new BookingFlightsNotPossibleException();
                 }
             }
-            origCity = destCity; i++;
+            origCity = destCity;
+            i++;
         }
         return flights;
     }
@@ -237,14 +238,15 @@ public class AirportSystem implements IAirportSystem {
      *
      * @param route the connection
      * @param date  the day
-     * @return      the flight
+     * @return the flight
      */
     private Flight addFlight(Route route, LocalDate date) {
         Flight flight = new Flight(route, date);
-        flightsById.putIfAbsent(flight.id,flight);
+        flightsById.putIfAbsent(flight.id, flight);
         Set<Flight> flights = flightsByDate.get(date);
         if (flights == null) {
-            flights = new HashSet<>(); flights.add(flight);
+            flights = new HashSet<>();
+            flights.add(flight);
             flightsByDate.put(date, flights);
         } else
             flights.add(flight);
@@ -258,14 +260,14 @@ public class AirportSystem implements IAirportSystem {
      * @param cities the connections.
      * @param start  the start date of the interval.
      * @param end    the end date of the interval.
-     * @return       the reservation's id.
+     * @return the reservation's id.
      */
     public UUID reserveFlight(UUID userId, List<String> cities, LocalDate start, LocalDate end)
             throws BookingFlightsNotPossibleException {
         Set<Flight> flights = getRouteFlights(cities, start, end);
-        Set<UUID> flightIds = flights.stream().map(e->e.id).collect(Collectors.toSet());
-        Reservation reservation = new Reservation(userId,flightIds);
-        for( Flight flight : flights) {
+        Set<UUID> flightIds = flights.stream().map(e -> e.id).collect(Collectors.toSet());
+        Reservation reservation = new Reservation(userId, flightIds);
+        for (Flight flight : flights) {
             try {
                 flight.addReservation(reservation.id);
             } catch (FullFlightException ignored) {
@@ -281,11 +283,11 @@ public class AirportSystem implements IAirportSystem {
      *
      * @param reservation Reservation to cancel
      */
-    private void cancelReservation(Reservation reservation){
+    private void cancelReservation(Reservation reservation) {
         Set<UUID> flightIds = reservation.getFlightIds();
-        for(UUID id : flightIds) {
+        for (UUID id : flightIds) {
             Flight flight = flightsById.get(id);
-            if (flight!=null)
+            if (flight != null)
                 flight.removeReservation(reservation.id);
         }
     }
@@ -293,15 +295,15 @@ public class AirportSystem implements IAirportSystem {
     /**
      * Cancels a flight.
      *
-     * @param userId                                        the id of the client
-     * @param reservationId                                 the id of the reservation
+     * @param userId        the id of the client
+     * @param reservationId the id of the reservation
+     * @return the deleted @see airport.Reservation .
      * @throws ReservationNotFoundException                 is launched if the reservation doesn't exist in the AirportSystem
      * @throws ReservationDoesNotBelongToTheClientException is launched if the reservation doesn't belong to the given
-     * client
-     * @return the deleted @see airport.Reservation .
+     *                                                      client
      */
     public Reservation cancelFlight(UUID userId, UUID reservationId) throws ReservationNotFoundException,
-            ReservationDoesNotBelongToTheClientException{
+            ReservationDoesNotBelongToTheClientException {
         Reservation reservation = this.reservationsById.remove(reservationId);
         if (reservation == null)
             throw new ReservationNotFoundException();
@@ -326,10 +328,10 @@ public class AirportSystem implements IAirportSystem {
         Set<Flight> flights = this.flightsByDate.remove(day);
         // Maybe thrown an exception when doesn't exist reservations in that day
         if (flights != null) {
-            for(Flight flight : flights) {
+            for (Flight flight : flights) {
                 // Remove flight from flightsById
                 this.flightsById.remove(flight.id);
-                for(UUID reservationId : flight.getReservations()) {
+                for (UUID reservationId : flight.getReservations()) {
                     // Remove reservation from reservationsById
                     Reservation reservation = reservationsById.remove(reservationId);
                     cancelReservation(reservation);
@@ -357,7 +359,7 @@ public class AirportSystem implements IAirportSystem {
     /**
      * Registers a user into the system.
      *
-     * @param user     the user
+     * @param user the user
      */
     public void register(User user) throws UsernameAlreadyExistsException {
         String username = user.getUsername();

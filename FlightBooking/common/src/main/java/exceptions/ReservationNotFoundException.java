@@ -1,4 +1,4 @@
 package exceptions;
 
-public class ReservationNotFoundException extends Exception{
+public class ReservationNotFoundException extends Exception {
 }

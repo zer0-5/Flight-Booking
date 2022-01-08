@@ -1,4 +1,4 @@
 package exceptions;
 
-public class BookingFlightsNotPossibleException extends Exception{
+public class BookingFlightsNotPossibleException extends Exception {
 }

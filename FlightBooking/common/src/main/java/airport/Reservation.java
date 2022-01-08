@@ -28,8 +28,8 @@ public class Reservation {
     /**
      * Constructor
      *
-     * @param clientId          the id of the Client.
-     * @param flightsIds        a set of flight's id.
+     * @param clientId   the id of the Client.
+     * @param flightsIds a set of flight's id.
      */
     public Reservation(UUID clientId, Set<UUID> flightsIds) {
         this.id = UUID.randomUUID();

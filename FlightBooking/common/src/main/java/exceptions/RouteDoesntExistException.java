@@ -1,4 +1,4 @@
 package exceptions;
 
-public class RouteDoesntExistException extends Exception{
+public class RouteDoesntExistException extends Exception {
 }

@@ -1,7 +1,6 @@
 package users;
 
 import java.util.ArrayDeque;
-import java.util.HashSet;
 import java.util.Queue;
 
 /**
@@ -16,6 +15,7 @@ public class Client extends User {
 
     /**
      * Constructor
+     *
      * @param username the username.
      * @param password the password.
      */
@@ -24,7 +24,7 @@ public class Client extends User {
         this.notifications = new ArrayDeque<>();
     }
 
-    public boolean emptyNotifications(){
+    public boolean emptyNotifications() {
         return notifications.isEmpty();
     }
 
