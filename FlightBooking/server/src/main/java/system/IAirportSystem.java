@@ -1,6 +1,9 @@
 package system;
 
-import airport.Flight;
+import airport.Reservation;
+import airport.Route;
+import exceptions.*;
+import users.User;
 
 import java.time.LocalDate;
 import java.util.List;
@@ -15,7 +18,7 @@ public interface IAirportSystem {
      * @param origin   the origin city.
      * @param destiny  the destiny city.
      * @param capacity the route capacity.
-     * @exception RouteAlreadyExistsException is launched if this route already exists
+     * @throws RouteAlreadyExistsException is launched if this route already exists
      */
     void addRoute(String origin, String destiny, int capacity) throws RouteAlreadyExistsException;
 
@@ -34,7 +37,7 @@ public interface IAirportSystem {
      * @param cities the connections.
      * @param start  the start date of the interval.
      * @param end    the end date of the interval.
-     * @return       the reservation's id.
+     * @return the reservation's id.
      * @throws BookingFlightsNotPossibleException if there is no route possible.
      */
     UUID reserveFlight(UUID userId, List<String> cities, LocalDate start, LocalDate end)
@@ -43,14 +46,14 @@ public interface IAirportSystem {
     /**
      * Cancels a flight.
      *
-     * @param userId                                        the id of the client
-     * @param reservationId                                 the id of the reservation
+     * @param userId        the id of the client
+     * @param reservationId the id of the reservation
+     * @return the deleted @see airport.Reservation .
      * @throws ReservationNotFoundException                 is launched if the reservation doesn't exist in the AirportSystem
      * @throws ReservationDoesNotBelongToTheClientException is launched if the reservation doesn't belong to the given
-     * client
-     * @return the deleted @see airport.Reservation .
+     *                                                      client
      */
-     Reservation cancelFlight(UUID userId, UUID reservationId) throws ReservationNotFoundException,
+    Reservation cancelFlight(UUID userId, UUID reservationId) throws ReservationNotFoundException,
             ReservationDoesNotBelongToTheClientException;
 
     /**
@@ -64,7 +67,7 @@ public interface IAirportSystem {
     /**
      * Registers a user into the system.
      *
-     * @param user     the user
+     * @param user the user
      */
     void register(User user) throws UsernameAlreadyExistsException;
 
@@ -75,5 +78,5 @@ public interface IAirportSystem {
      * @param password the user's password.
      * @return User
      */
-    public User authenticate(String name, String password) throws UserNotFoundException, InvalidCredentialsException;
+    User authenticate(String name, String password) throws UserNotFoundException, InvalidCredentialsException;
 }

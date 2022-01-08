@@ -11,7 +11,7 @@ public enum RequestType {
     CANCEL_DAY,
 
     // User commands
-    RESERVATION,
+    RESERVE,
     CANCEL_RESERVATION,
     GET_ROUTES,
 }

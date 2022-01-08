@@ -1,28 +1,26 @@
 package server;
 
+import exceptions.AlreadyLoggedIn;
+import exceptions.InvalidCredentialsException;
+import exceptions.UserNotFoundException;
 import request.RequestType;
 import system.IAirportSystem;
+import users.User;
 
-import javax.xml.crypto.Data;
-import java.io.DataInputStream;
 import java.io.IOException;
 import java.net.Socket;
-import java.nio.ByteBuffer;
-import java.nio.charset.StandardCharsets;
 import java.util.List;
-
-import static server.TaggedConnection.*;
 
 
 public class ClientHandler implements Runnable {
-    private final Session session;
-    private IAirportSystem airportSystem;
+    private final IAirportSystem airportSystem;
     private final TaggedConnection taggedConnection;
+    private User account;
 
     public ClientHandler(Socket socket, IAirportSystem airportSystem) throws IOException {
         this.taggedConnection = new TaggedConnection(socket);
+        this.account = null;
         this.airportSystem = airportSystem;
-        this.session = new Session();
     }
 
     @Override
@@ -30,22 +28,60 @@ public class ClientHandler implements Runnable {
         try {
             boolean quit = false;
             while (!quit) {
-                Frame frame = taggedConnection.receive();
+                TaggedConnection.Frame frame = taggedConnection.receive();
                 List<byte[]> data = frame.data();
+
                 switch (RequestType.values()[frame.tag()]) {
-                    case LOGIN -> login(new String(data.get(0)), new String(data.get(1)));
+                    case REGISTER -> register(data);
+                    case LOGIN -> login(data);
                     case EXIT -> quit = true;
+
+                    case CANCEL_DAY -> cancelDay(data);
+                    case INSERT_ROUTE -> insertRoute(data);
+
+                    case GET_ROUTES -> getRoutes(data);
+                    case RESERVE -> reserve(data);
+                    case CANCEL_RESERVATION -> cancelReservation(data);
                 }
 
-                //quit = session.handle(message);
             }
 
-        } catch (IOException e) {
+        } catch (IOException | UserNotFoundException | InvalidCredentialsException | AlreadyLoggedIn e) {
+            // TODO: Handle the error here
             e.printStackTrace();
         }
     }
 
-    private void login(String name, String password) {
-        boolean valid = airportSystem.
+    private void cancelReservation(List<byte[]> data) {
+        // TODO:
+    }
+
+    private void reserve(List<byte[]> data) {
+        // TODO:
+    }
+
+    private void getRoutes(List<byte[]> data) {
+        // TODO:
+    }
+
+    private void insertRoute(List<byte[]> data) {
+        // TODO:
+    }
+
+    private void cancelDay(List<byte[]> data) {
+        // TODO:
+    }
+
+    private void register(List<byte[]> data) {
+        // TODO: airportSystem.register(data.get(0));
+    }
+
+    public boolean isLoggedIn() {
+        return account != null;
+    }
+
+    private void login(List<byte[]> data) throws UserNotFoundException, InvalidCredentialsException, AlreadyLoggedIn {
+        if (isLoggedIn()) throw new AlreadyLoggedIn(account);
+        this.account = airportSystem.authenticate(new String(data.get(0)), new String(data.get(1)));
     }
 }
