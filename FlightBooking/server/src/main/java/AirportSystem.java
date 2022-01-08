@@ -384,6 +384,7 @@ public class AirportSystem implements IAirportSystem {
      * Registers a user into the system.
      *
      * @param user     the user
+     * @throws UsernameAlreadyExistsException when the username is already registered.
      */
     public void register(User user) throws UsernameAlreadyExistsException {
         String username = user.getUsername();
@@ -394,10 +395,11 @@ public class AirportSystem implements IAirportSystem {
 
     /**
      * Authenticates a user.
-     *
      * @param name     the user's name.
      * @param password the user's password.
      * @return User
+     * @throws UserNotFoundException If the user isn't in the system.
+     * @throws InvalidCredentialsException If the password isn't correct.
      */
     public User authenticate(String name, String password)
             throws UserNotFoundException, InvalidCredentialsException {

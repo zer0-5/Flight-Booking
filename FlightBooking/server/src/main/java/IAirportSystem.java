@@ -76,5 +76,6 @@ public interface IAirportSystem {
      * @param password the user's password.
      * @return User
      */
-    User authenticate(String name, String password) throws UserNotFoundException, InvalidCredentialsException;
+    User authenticate(String name, String password)
+            throws UserNotFoundException, InvalidCredentialsException;
 }
