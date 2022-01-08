@@ -1,8 +1,6 @@
 import airport.Route;
 import exceptions.*;
-import org.junit.jupiter.api.AfterAll;
-import org.junit.jupiter.api.BeforeAll;
-import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.*;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
 import org.junit.jupiter.params.provider.ValueSource;
@@ -61,6 +59,13 @@ class AirportSystemTest {
         fail();
     }
 
+    /**
+     * Test  to verify if the route stores with case insensivity.
+     * We create one root, and test if we can get roots with names that have other "camel cases" in name.
+     * @param orig
+     * @param dest
+     * @param capacity
+     */
     @ParameterizedTest
     @CsvSource({"Lisbon,London,30", "London,Paris,1", "Lisbon,Paris,23"})
     void getRoute(String orig, String dest, int capacity) {
@@ -68,20 +73,17 @@ class AirportSystemTest {
             System.out.println("Add route: " + orig + "-> " + dest + " ("+ capacity +")");
             airportSystem.addRoute(orig, dest, capacity);
             System.out.println("GET route: " + orig + "-> " + dest);
-            Route route1 = airportSystem.getRoute(orig, dest);
-            assert route1.origin.equals(orig);
-            assert route1.destination.equals(dest);
-            assert route1.capacity == capacity;
+            List<Route> routes_tested = new ArrayList<>();
+            routes_tested.add(airportSystem.getRoute(orig, dest));
             System.out.println("GET route: " + orig.toUpperCase() + "-> " + dest.toLowerCase());
-            Route route2 = airportSystem.getRoute(orig.toUpperCase(), dest.toLowerCase());
-            assert route2.origin.equals(orig);
-            assert route2.destination.equals(dest);
-            assert route2.capacity == capacity;
+            routes_tested.add(airportSystem.getRoute(orig.toUpperCase(), dest.toLowerCase()));
             System.out.println("GET route: " + orig.toLowerCase() + "-> " + dest.toUpperCase());
-            Route route3 = airportSystem.getRoute(orig.toLowerCase(), dest.toUpperCase());
-            assert route3.origin.equals(orig);
-            assert route3.destination.equals(dest);
-            assert route3.capacity == capacity;
+            routes_tested.add(airportSystem.getRoute(orig.toLowerCase(), dest.toUpperCase()));
+            for (Route tested : routes_tested){
+                tested.origin.equals(orig);
+                tested.destination.equals(dest);
+                assert tested.capacity == capacity;
+            }
         } catch (RouteAlreadyExistsException | RouteDoesntExistException e) {
             fail();
         }
@@ -89,14 +91,26 @@ class AirportSystemTest {
 
     @ParameterizedTest
     @CsvSource({"Lisbon,Paris", "Paris,Lisbon"})
-    void routeDoesntExistException(String orig, String dest) {
+    public void routeDoesntExistException(String orig, String dest) {
         System.out.println("Add route: Lisbon -> London (30)");
         addRoute("Lisbon","London",30);
-        try {
+        Assertions.assertThrows(RouteDoesntExistException.class, () -> {
             System.out.println("GET route: " + orig + "-> " + dest);
             airportSystem.getRoute(orig, dest);
-        } catch (RouteDoesntExistException ignored) {
-            System.out.println("FAIL: Exception thrown");
+        });
+
+    }
+
+    @org.junit.jupiter.api.Test
+    void reserveFlightValid(){
+        LocalDate date = LocalDate.now();
+        addRoute("Paris","Lisbon", 2);
+        List<String> cities1 = new ArrayList<>(Arrays.asList("Paris","Lisbon"));
+        try {
+            airportSystem.reserveFlight(UUID.randomUUID(), cities1, date,date);
+            airportSystem.reserveFlight(UUID.randomUUID(), cities1, date,date);
+        } catch (BookingFlightsNotPossibleException | FullFlightException ignored) {
+            fail();
         }
     }
 
