@@ -1,5 +1,3 @@
-package system;
-
 import airport.Reservation;
 import airport.Route;
 import exceptions.*;
@@ -18,9 +16,11 @@ public interface IAirportSystem {
      * @param origin   the origin city.
      * @param destiny  the destiny city.
      * @param capacity the route capacity.
-     * @throws RouteAlreadyExistsException is launched if this route already exists
+     * @exception RouteAlreadyExistsException is launched if this route already exists
+     * @exception RouteDoesntExistException is launched if this route has the same origin and destination.
      */
-    void addRoute(String origin, String destiny, int capacity) throws RouteAlreadyExistsException;
+    void addRoute(String origin, String destiny, int capacity) throws RouteAlreadyExistsException,
+            RouteDoesntExistException;
 
     /**
      * Cancels a day. Preventing new reservations and canceling the remaining ones from that day.
@@ -28,7 +28,7 @@ public interface IAirportSystem {
      * @param day the day.
      * @return all canceled @see airport.Reservation .
      */
-    Set<Reservation> cancelDay(LocalDate day);
+    Set<Reservation> cancelDay(LocalDate day) throws DayAlreadyCanceledException;
 
     /**
      * Reserves a flight given the connections, in the time interval.
@@ -37,23 +37,25 @@ public interface IAirportSystem {
      * @param cities the connections.
      * @param start  the start date of the interval.
      * @param end    the end date of the interval.
-     * @return the reservation's id.
-     * @throws BookingFlightsNotPossibleException if there is no route possible.
+     * @return       the reservation's id.
+     * @throws BookingFlightsNotPossibleException This can happen because the day is cancel,
+     *                                              or because the possible flights are full.
+     * @throws RouteDoesntExistException if there is no route possible.
      */
     UUID reserveFlight(UUID userId, List<String> cities, LocalDate start, LocalDate end)
-            throws BookingFlightsNotPossibleException;
+            throws BookingFlightsNotPossibleException, RouteDoesntExistException;
 
     /**
      * Cancels a flight.
      *
-     * @param userId        the id of the client
-     * @param reservationId the id of the reservation
-     * @return the deleted @see airport.Reservation .
+     * @param userId                                        the id of the client
+     * @param reservationId                                 the id of the reservation
      * @throws ReservationNotFoundException                 is launched if the reservation doesn't exist in the AirportSystem
      * @throws ReservationDoesNotBelongToTheClientException is launched if the reservation doesn't belong to the given
-     *                                                      client
+     * client
+     * @return the deleted @see airport.Reservation .
      */
-    Reservation cancelFlight(UUID userId, UUID reservationId) throws ReservationNotFoundException,
+     Reservation cancelFlight(UUID userId, UUID reservationId) throws ReservationNotFoundException,
             ReservationDoesNotBelongToTheClientException;
 
     /**
@@ -63,20 +65,46 @@ public interface IAirportSystem {
      */
     List<Route> getRoutes();
 
+    /**
+     *  Registers a client into the system.
+     *
+     * @param username Username
+     * @param password Password
+     * @return Client
+     * @throws UsernameAlreadyExistsException Username already exists.
+     */
+    User registerClient(String username, String password) throws UsernameAlreadyExistsException;
 
     /**
-     * Registers a user into the system.
+     *  Registers an admin into the system.
      *
-     * @param user the user
+     * @param username Username
+     * @param password Password
+     * @return Admin
+     * @throws UsernameAlreadyExistsException Username already exists.
      */
-    void register(User user) throws UsernameAlreadyExistsException;
+    User registerAdmin(String username, String password) throws UsernameAlreadyExistsException;
 
     /**
      * Authenticates a user.
      *
-     * @param name     the user's name.
+     * @param username     the user's username.
      * @param password the user's password.
      * @return User
      */
-    User authenticate(String name, String password) throws UserNotFoundException, InvalidCredentialsException;
+    User authenticate(String username, String password)
+            throws UserNotFoundException, InvalidCredentialsException;
+
+    /**
+     * Change password of a user.
+     *
+     * @param username username.
+     * @param oldPassword old password.
+     * @param newPassword new password.
+     */
+    default void changeUserPassword(String username, String oldPassword, String newPassword)
+            throws UserNotFoundException, InvalidCredentialsException {
+        User user = authenticate(username,oldPassword);
+        user.changerUserPassword(newPassword);
+    }
 }

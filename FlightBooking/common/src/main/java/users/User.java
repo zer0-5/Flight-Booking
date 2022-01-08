@@ -6,6 +6,11 @@ package users;
 public abstract class User {
 
     /**
+     * Id.
+     */
+    private final UUID id;
+
+    /**
      * Username.
      */
     private final String username;
@@ -13,7 +18,7 @@ public abstract class User {
     /**
      * Password.
      */
-    private final String password;
+    private String password;
 
     /**
      * Constructor
@@ -22,6 +27,7 @@ public abstract class User {
      * @param password the password.
      */
     public User(String username, String password) {
+        this.id = UUID.randomUUID();
         this.password = password;
         this.username = username;
     }
@@ -43,5 +49,22 @@ public abstract class User {
      */
     public String getUsername() {
         return username;
+    }
+
+    /**
+     * Get the id fo this user.
+     * @return ID
+     */
+    public UUID getId() {
+        return id;
+    }
+
+    /**
+     * Change password of a user.
+     *
+     * @param newPassword new password.
+     */
+    public void changerUserPassword(String newPassword){
+        this.password = newPassword;
     }
 }
