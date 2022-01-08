@@ -14,4 +14,10 @@ public enum RequestType {
     RESERVE,
     CANCEL_RESERVATION,
     GET_ROUTES,
+    ;
+
+
+    public static RequestType getRequestType(int opcode) {
+        return RequestType.values()[opcode];
+    }
 }

@@ -1,5 +1,6 @@
 package server;
 
+import connection.TaggedConnection;
 import exceptions.AlreadyLoggedIn;
 import exceptions.InvalidCredentialsException;
 import exceptions.UserNotFoundException;
@@ -9,6 +10,8 @@ import users.User;
 
 import java.io.IOException;
 import java.net.Socket;
+import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
 import java.util.List;
 
 
@@ -26,28 +29,34 @@ public class ClientHandler implements Runnable {
     @Override
     public void run() {
         try {
-            boolean quit = false;
-            while (!quit) {
-                TaggedConnection.Frame frame = taggedConnection.receive();
-                List<byte[]> data = frame.data();
+            TaggedConnection.Frame frame = taggedConnection.receive();
+            List<byte[]> data = frame.data();
 
-                switch (RequestType.values()[frame.tag()]) {
-                    case REGISTER -> register(data);
-                    case LOGIN -> login(data);
-                    case EXIT -> quit = true;
+            try {
+                boolean quit = false;
+                while (!quit) {
+                    switch (RequestType.values()[frame.tag()]) {
+                        case REGISTER -> register(data);
+                        case LOGIN -> login(data);
+                        case EXIT -> quit = true;
 
-                    case CANCEL_DAY -> cancelDay(data);
-                    case INSERT_ROUTE -> insertRoute(data);
+                        case CANCEL_DAY -> cancelDay(data);
+                        case INSERT_ROUTE -> insertRoute(data);
 
-                    case GET_ROUTES -> getRoutes(data);
-                    case RESERVE -> reserve(data);
-                    case CANCEL_RESERVATION -> cancelReservation(data);
+                        case GET_ROUTES -> getRoutes(data);
+                        case RESERVE -> reserve(data);
+                        case CANCEL_RESERVATION -> cancelReservation(data);
+                    }
                 }
 
+            } catch (UserNotFoundException | InvalidCredentialsException | AlreadyLoggedIn e) {
+                List<byte[]> list = new ArrayList<>();
+                list.add("ERROR".getBytes(StandardCharsets.UTF_8));
+                if (e.getMessage() != null) list.add(e.getMessage().getBytes(StandardCharsets.UTF_8));
+                taggedConnection.send(frame.tag(), list);
             }
 
-        } catch (IOException | UserNotFoundException | InvalidCredentialsException | AlreadyLoggedIn e) {
-            // TODO: Handle the error here
+        } catch (IOException e) {
             e.printStackTrace();
         }
     }
@@ -84,4 +93,11 @@ public class ClientHandler implements Runnable {
         if (isLoggedIn()) throw new AlreadyLoggedIn(account);
         this.account = airportSystem.authenticate(new String(data.get(0)), new String(data.get(1)));
     }
+
+    private void sendOk(int type) throws IOException {
+        List<byte[]> list = new ArrayList<>();
+        list.add("Ok".getBytes(StandardCharsets.UTF_8));
+        taggedConnection.send(type, list);
+    }
+
 }

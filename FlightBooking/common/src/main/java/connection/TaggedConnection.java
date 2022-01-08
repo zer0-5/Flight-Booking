@@ -1,6 +1,4 @@
-package server;
-
-import request.RequestType;
+package connection;
 
 import java.io.*;
 import java.net.Socket;
@@ -32,10 +30,10 @@ public class TaggedConnection implements AutoCloseable {
     public void send(int tag, List<byte[]> data) throws IOException {
         out.lock();
         try {
-            outputStream.write(tag); // Tag
-            outputStream.write(data.size()); // Length of the data
-            for (byte[] bytes: data) {
-                outputStream.write(bytes.length);
+            outputStream.writeInt(tag); // Tag
+            outputStream.writeInt(data.size()); // Length of the data
+            for (byte[] bytes : data) {
+                outputStream.writeInt(bytes.length);
                 outputStream.write(bytes);
             }
             outputStream.flush();
