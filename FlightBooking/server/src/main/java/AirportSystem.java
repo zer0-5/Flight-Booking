@@ -2,6 +2,7 @@ import airport.Flight;
 import airport.Reservation;
 import airport.Route;
 import exceptions.*;
+import server.src.main.InvalidRouteException;
 import users.User;
 
 import java.time.LocalDate;
@@ -73,10 +74,14 @@ public class AirportSystem implements IAirportSystem {
      * @param dest     the destiny city.
      * @param capacity the capacity of each flight.
      * @exception RouteAlreadyExistsException is launched if this route already exists
+     * @exception InvalidRouteException is launched if this route has the same origin and destination.
      */
-    public void addRoute(String orig, String dest, int capacity) throws RouteAlreadyExistsException {
+    public void addRoute(String orig, String dest, int capacity) throws RouteAlreadyExistsException, InvalidRouteException {
         String origUpperCase = orig.toUpperCase();
         String destUpperCase = dest.toUpperCase();
+        if (origUpperCase.equals(destUpperCase)) {
+            throw new InvalidRouteException();
+        }
         Route newRoute = new Route(orig, dest, capacity);
         Map<String,Route> connectionsByCityDest = connectionsByCityOrig.get(origUpperCase);
         if (connectionsByCityDest != null){
@@ -378,7 +383,6 @@ public class AirportSystem implements IAirportSystem {
                 .flatMap(e -> e.values().stream())
                 .collect(Collectors.toList());
     }
-
 
     /**
      * Registers a user into the system.

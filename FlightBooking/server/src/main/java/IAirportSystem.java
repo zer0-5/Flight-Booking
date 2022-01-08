@@ -1,6 +1,7 @@
 import airport.Reservation;
 import airport.Route;
 import exceptions.*;
+import server.src.main.InvalidRouteException;
 import users.User;
 
 import java.time.LocalDate;
@@ -18,7 +19,7 @@ public interface IAirportSystem {
      * @param capacity the route capacity.
      * @exception RouteAlreadyExistsException is launched if this route already exists
      */
-    void addRoute(String origin, String destiny, int capacity) throws RouteAlreadyExistsException;
+    void addRoute(String origin, String destiny, int capacity) throws RouteAlreadyExistsException, InvalidRouteException;
 
     /**
      * Cancels a day. Preventing new reservations and canceling the remaining ones from that day.
