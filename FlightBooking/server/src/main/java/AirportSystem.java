@@ -295,6 +295,7 @@ public class AirportSystem implements IAirportSystem {
         for( Flight flight : flights) {
             try {
                 flight.addReservation(reservation.id);
+                user.addReservation(reservation.id);
             } catch (FullFlightException ignored) {
                 // Shouldn't happen
                 throw new BookingFlightsNotPossibleException();
@@ -330,18 +331,22 @@ public class AirportSystem implements IAirportSystem {
      */
     public Reservation cancelFlight(String userName, UUID reservationId) throws ReservationNotFoundException,
             ReservationDoesNotBelongToTheClientException , UserNotFoundException {
-        User user = usersById.get(userName);
-        if (user == null)
-            throw new UserNotFoundException();
+
         Reservation reservation = this.reservationsById.remove(reservationId);
         if (reservation == null)
             throw new ReservationNotFoundException();
-        if (!reservation.checksUser(user)) {
-            this.reservationsById.put(reservation.id, reservation);
-            throw new ReservationDoesNotBelongToTheClientException();
+
+        User user = usersById.get(userName);
+        if (user == null) {
+            this.reservationsById.put(reservationId,reservation);
+            throw new UserNotFoundException();
         }
+        if (!user.containsReservation(reservationId))
+            throw new ReservationDoesNotBelongToTheClientException();
+
 
         cancelReservation(reservation);
+        user.removeReservation(reservationId);
         return reservation;
     }
 

@@ -1,8 +1,6 @@
 package users;
 
-import java.util.ArrayDeque;
-import java.util.Objects;
-import java.util.Queue;
+import java.util.*;
 
 /**
  * Client class.

@@ -2,7 +2,9 @@ package users;
 
 import encryption.BCrypt;
 
+import java.util.HashSet;
 import java.util.Objects;
+import java.util.Set;
 import java.util.UUID;
 
 /**
@@ -21,6 +23,11 @@ public abstract class User {
     private String password;
 
     /**
+     * Set of the reservations of the client
+     */
+    private final Set<UUID> reservations;
+
+    /**
      * Constructor
      * @param username the username.
      * @param password the password.
@@ -28,6 +35,7 @@ public abstract class User {
     public User(String username, String password) {
         this.password = BCrypt.hashpw(password, BCrypt.gensalt());
         this.username = username;
+        this.reservations = new HashSet<>();
     }
 
     /**
@@ -54,6 +62,18 @@ public abstract class User {
      */
     public void changerUserPassword(String newPassword){
         this.password = BCrypt.hashpw(newPassword, BCrypt.gensalt());
+    }
+
+    public void addReservation(UUID reservation) {
+        this.reservations.add(reservation);
+    }
+
+    public void removeReservation(UUID reservation) {
+        this.reservations.remove(reservation);
+    }
+
+    public boolean containsReservation(UUID reservation) {
+        return this.reservations.contains(reservation);
     }
 
     @Override

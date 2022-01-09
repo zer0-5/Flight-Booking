@@ -253,12 +253,13 @@ class AirportSystemTest {
         initRoutes_LondonParisLisbon();
         List<String> cities = new ArrayList<>(Arrays.asList("Paris","Lisbon"));
         String client = "Hello";
-        registerAdmin(client,client);
 
         Assertions.assertDoesNotThrow( () -> {
+            User user = airportSystem.registerClient(client,client);
             UUID reservation = airportSystem.reserveFlight(client, cities, date,date);
+            assert user.containsReservation(reservation);
             airportSystem.cancelFlight(client, reservation);
-            airportSystem.reserveFlight(client, cities, date,date);
+            assert !user.containsReservation(reservation);
         });
     }
 
@@ -304,13 +305,26 @@ class AirportSystemTest {
     }
 
     @org.junit.jupiter.api.Test
+    void cancelFlight_ReservationDoesNotBelongToTheClient() {
+        initUserAndRoutes_LondonParisLisbon();
+        List<String> cities = new ArrayList<>(Arrays.asList("Paris", "Lisbon"));
+        String s = "other";
+        Assertions.assertDoesNotThrow( () -> {
+            airportSystem.registerClient(s,s);
+            UUID reservation = airportSystem.reserveFlight(s, cities, date, date);
+            Assertions.assertThrows(ReservationDoesNotBelongToTheClientException.class, () ->
+                    airportSystem.cancelFlight(username, reservation));
+        });
+
+    }
+
+    @org.junit.jupiter.api.Test
     void cancelFlight_ReservationNotFoundException() {
         initUser();
         Assertions.assertThrows(ReservationNotFoundException.class, () ->
                 airportSystem.cancelFlight(username, UUID.randomUUID()));
-        initRoutes_LondonParisLisbon();
         Assertions.assertThrows(ReservationNotFoundException.class, () ->
-            airportSystem.cancelFlight(username, UUID.randomUUID()));
+                airportSystem.cancelFlight(username, UUID.randomUUID()));
     }
 
     //---------------------- Cancel Days ----------------
@@ -330,9 +344,6 @@ class AirportSystemTest {
         });
     }
 
-    /**
-     * Devíamos alterar o nome cancelFlight para cancelReservation, acho.
-     */
     @org.junit.jupiter.api.Test
     void cancelReservationAfterCancelDay(){
         initRoutes_LondonParisLisbon();
@@ -346,10 +357,6 @@ class AirportSystemTest {
         });
     }
 
-    /**
-     * Este está mal... Mas teríamos de mudar umas coisas na implementação.
-     * Acho que é melhor juntar as duas exceções que o reserFlight dá.
-     */
     @org.junit.jupiter.api.Test
     void cancelReservationAfterCancelDay1(){
         initUserAndRoutes_LondonParisLisbon();
@@ -475,13 +482,11 @@ class AirportSystemTest {
     @MethodSource("usernamesAndPasswords")
     void authenticate_invalidCredentialsException(String username, String password) {
         registerClient(username,password);
-        Assertions.assertThrows(InvalidCredentialsException.class, () -> {
-            airportSystem.authenticate(username, password.toUpperCase());
-        });
+        Assertions.assertThrows(InvalidCredentialsException.class, () ->
+                airportSystem.authenticate(username, password.toUpperCase()));
         registerAdmin(username.toUpperCase(),password);
-        Assertions.assertThrows(InvalidCredentialsException.class, () -> {
-            airportSystem.authenticate(username.toUpperCase(), password.toLowerCase());
-        });
+        Assertions.assertThrows(InvalidCredentialsException.class, () ->
+                airportSystem.authenticate(username.toUpperCase(), password.toLowerCase()));
     }
 
     @ParameterizedTest
