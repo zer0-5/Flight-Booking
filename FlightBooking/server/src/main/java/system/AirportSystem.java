@@ -1,3 +1,5 @@
+package system;
+
 import airport.Flight;
 import airport.Reservation;
 import airport.Route;
@@ -104,7 +106,7 @@ public class AirportSystem implements IAirportSystem {
      * @param dest     the destiny city.
      * @exception RouteDoesntExistException is launched if this route doesn't exist.
      */
-    protected Route getRoute(String orig, String dest) throws RouteDoesntExistException {
+    public Route getRoute(String orig, String dest) throws RouteDoesntExistException {
         String origUpperCase = orig.toUpperCase();
         String destUpperCase = dest.toUpperCase();
         Map<String,Route> routesByDestCity = connectionsByCityOrig.get(origUpperCase);

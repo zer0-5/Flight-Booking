@@ -6,6 +6,7 @@ import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.CsvSource;
 import org.junit.jupiter.params.provider.MethodSource;
 import org.junit.jupiter.params.provider.ValueSource;
+import system.AirportSystem;
 import users.Admin;
 import users.Client;
 import users.User;
@@ -444,13 +445,11 @@ class AirportSystemTest {
     @MethodSource("usernamesAndPasswords")
     void authenticate_invalidCredentialsException(String username, String password) {
         registerClient(username,password);
-        Assertions.assertThrows(InvalidCredentialsException.class, () -> {
-            airportSystem.authenticate(username, password.toUpperCase());
-        });
+        Assertions.assertThrows(InvalidCredentialsException.class, () ->
+                airportSystem.authenticate(username, password.toUpperCase()));
         registerAdmin(username.toUpperCase(),password);
-        Assertions.assertThrows(InvalidCredentialsException.class, () -> {
-            airportSystem.authenticate(username.toUpperCase(), password.toLowerCase());
-        });
+        Assertions.assertThrows(InvalidCredentialsException.class, () ->
+                airportSystem.authenticate(username.toUpperCase(), password.toLowerCase()));
     }
 
     @ParameterizedTest

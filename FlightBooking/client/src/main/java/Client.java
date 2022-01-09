@@ -1,3 +1,4 @@
+import airport.Route;
 import connection.TaggedConnection;
 import exceptions.NotLoggedInException;
 import org.apache.logging.log4j.LogManager;
@@ -6,6 +7,7 @@ import request.RequestType;
 
 import java.io.IOException;
 import java.net.Socket;
+import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
@@ -94,13 +96,42 @@ public class Client implements Runnable {
         // TODO:
     }
 
-    private void getRoutes() throws NotLoggedInException {
+    private void getRoutes() throws NotLoggedInException, IOException {
         if (!logged_in) throw new NotLoggedInException();
+
+        List<byte[]> list = new ArrayList<>();
+        taggedConnection.send(RequestType.GET_ROUTES.ordinal(), list);
+
+        Frame response = taggedConnection.receive();
+
+        if (checkError(response)) printError(response);
+        else {
+            logger.info("Get routes with success!");
+            response.data().stream().map(Route::deserialize).toList().forEach(System.out::println);
+        }
         // TODO:
     }
 
-    private void insertRoute() {
-        // TODO:
+    private void insertRoute() throws IOException, NotLoggedInException {
+        if (!logged_in) throw new NotLoggedInException();
+
+        System.out.println("Insert origin route: ");
+        String origin = in.nextLine();
+        System.out.println("Insert destiny route: ");
+        String destiny = in.nextLine();
+        System.out.println("Insert capacity of the route: ");
+        int capacity = Integer.parseInt(in.nextLine());
+
+        List<byte[]> list = new ArrayList<>();
+        list.add(origin.getBytes(StandardCharsets.UTF_8));
+        list.add(destiny.getBytes(StandardCharsets.UTF_8));
+        list.add(ByteBuffer.allocate(Integer.BYTES).putInt(capacity).array());
+        taggedConnection.send(RequestType.INSERT_ROUTE.ordinal(), list);
+
+        Frame response = taggedConnection.receive();
+
+        if (checkError(response)) printError(response);
+        else logger.info("Route successfully inserted!");
     }
 
     private void cancelDay() {
@@ -120,7 +151,7 @@ public class Client implements Runnable {
         for (int i = 1; i < frame.data().size(); i++) {
             System.out.println(new String(frame.data().get(i)));
         }
-        logger.info("Error with the request: " + frame.data().stream().map(String::new).collect(Collectors.joining(" ")));
+        System.out.println("Error with the request: " + frame.data().stream().map(String::new).collect(Collectors.joining(" ")));
     }
 
 }

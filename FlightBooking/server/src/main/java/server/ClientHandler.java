@@ -1,9 +1,8 @@
 package server;
 
+import airport.Route;
 import connection.TaggedConnection;
-import exceptions.AlreadyLoggedInException;
-import exceptions.InvalidCredentialsException;
-import exceptions.UserNotFoundException;
+import exceptions.*;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import request.RequestType;
@@ -12,11 +11,13 @@ import users.User;
 
 import java.io.IOException;
 import java.net.Socket;
+import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.stream.Collectors;
 
-import static request.RequestType.LOGIN;
+import static request.RequestType.*;
 
 
 public class ClientHandler implements Runnable {
@@ -36,12 +37,13 @@ public class ClientHandler implements Runnable {
     public void run() {
         try {
             logger.info("Starting a new connection with client!");
-            TaggedConnection.Frame frame = taggedConnection.receive();
-            List<byte[]> data = frame.data();
 
-            logger.debug("Request data: " + frame.tag() + " " + frame.data());
             boolean quit = false;
             while (!quit) {
+                TaggedConnection.Frame frame = taggedConnection.receive();
+                logger.debug("Request data: " + frame.tag() + " " + frame.data());
+
+                List<byte[]> data = frame.data();
                 try {
                     switch (RequestType.getRequestType(frame.tag())) {
                         case REGISTER -> register(data);
@@ -87,11 +89,15 @@ public class ClientHandler implements Runnable {
         // TODO:
     }
 
-    private void getRoutes(List<byte[]> data) {
+    private void getRoutes(List<byte[]> data) throws IOException {
+        sendOk(GET_ROUTES.ordinal(), new ArrayList<>(airportSystem.getRoutes().stream().map(Route::serialize).collect(Collectors.toList())));
+        //airportSystem.getRoutes();
         // TODO:
     }
 
-    private void insertRoute(List<byte[]> data) {
+    private void insertRoute(List<byte[]> data) throws RouteDoesntExistException, RouteAlreadyExistsException, IOException {
+        airportSystem.addRoute(new String(data.get(0)), new String(data.get(1)), ByteBuffer.wrap(data.get(2)).getInt());
+        sendOk(INSERT_ROUTE.ordinal(), new ArrayList<>());
         // TODO:
     }
 
@@ -114,7 +120,7 @@ public class ClientHandler implements Runnable {
     }
 
     private void sendOk(int type, List<byte[]> args) throws IOException {
-        args.add(0, "Ok".getBytes(StandardCharsets.UTF_8));
+        if (args.size() == 0) args.add("Ok".getBytes(StandardCharsets.UTF_8));
         taggedConnection.send(type, args);
     }
 

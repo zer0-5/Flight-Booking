@@ -1,5 +1,7 @@
 package users;
 
+import java.util.UUID;
+
 /**
  * User class.
  */

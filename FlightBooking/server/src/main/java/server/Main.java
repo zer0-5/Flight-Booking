@@ -1,6 +1,7 @@
 package server;
 
 
+import exceptions.UsernameAlreadyExistsException;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import system.AirportSystem;
@@ -17,11 +18,14 @@ public class Main {
     @SuppressWarnings({"CanBeFinal", "FieldMayBeFinal", "FieldCanBeLocal"})
     private static boolean running = true;
 
-    public static void main(String[] args) throws IOException {
+    public static void main(String[] args) throws IOException, UsernameAlreadyExistsException {
         IAirportSystem iAirportSystem = new AirportSystem();
+        iAirportSystem.registerAdmin("admin", "admin");
+
+
         try (ServerSocket serverSocket = new ServerSocket(PORT)) {
             logger.info("ServerSocket starting...");
-            var pool = Executors.newFixedThreadPool(NTHREADS);
+            var pool = Executors.newFixedThreadPool(NTHREADS); // TODO: Fazer isto manualmente
 
             while (running) pool.execute(new ClientHandler(serverSocket.accept(), iAirportSystem));
         }
