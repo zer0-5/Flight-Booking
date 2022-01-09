@@ -17,7 +17,7 @@ public class Reservation {
     public final UUID id;
 
     /**
-     * Id of the client that owns this reservation.
+     * Client that owns this reservation.
      */
     private final User client;
 
