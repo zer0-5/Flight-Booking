@@ -21,6 +21,8 @@ class AirportSystemTest {
     private AirportSystem airportSystem;
     // Used to test.
     private LocalDate date ;
+    // Used to test
+    private final String username = "admin";
 
     @BeforeAll
     static void startTest() {
@@ -48,9 +50,18 @@ class AirportSystemTest {
      * Private method to initialize airport system.
      * Capacity of each flight is 1.
      */
-    private void initRoutes_LondonParisLisbon(){
+    private void initRoutes_LondonParisLisbon() {
         addRoute("London","Paris", 1);
         addRoute("Paris","Lisbon", 1);
+    }
+
+    private void initUser() {
+        registerAdmin(username,username);
+    }
+
+    private void initUserAndRoutes_LondonParisLisbon() {
+        initUser();
+        initRoutes_LondonParisLisbon();
     }
 
     // -------------------- Add Route -------------------
@@ -141,21 +152,23 @@ class AirportSystemTest {
     //---------------------- Reservation Flights ----------------
     @org.junit.jupiter.api.Test
     void reserveFlight(){
+        initUser();
         addRoute("Paris","Lisbon", 2);
         List<String> cities1 = new ArrayList<>(Arrays.asList("Paris","Lisbon"));
         Assertions.assertDoesNotThrow( () -> {
-            airportSystem.reserveFlight(UUID.randomUUID(), cities1, date, date);
-            airportSystem.reserveFlight(UUID.randomUUID(), cities1, date, date);
+            airportSystem.reserveFlight(username, cities1, date, date);
+            airportSystem.reserveFlight(username, cities1, date, date);
         });
     }
 
     @org.junit.jupiter.api.Test
     void reserveFlight_DifferentDays(){
+        initUser();
         addRoute("Paris","Lisbon", 1);
         List<String> cities1 = new ArrayList<>(Arrays.asList("Paris","Lisbon"));
         Assertions.assertDoesNotThrow( () -> {
-            airportSystem.reserveFlight(UUID.randomUUID(), cities1, date,date);
-            airportSystem.reserveFlight(UUID.randomUUID(), cities1, date,date.plusDays(1));
+            airportSystem.reserveFlight(username, cities1, date,date);
+            airportSystem.reserveFlight(username, cities1, date,date.plusDays(1));
         });
     }
 
@@ -171,19 +184,20 @@ class AirportSystemTest {
      */
     @org.junit.jupiter.api.Test
     void reserveFlight_preReservationCanceled(){
+        initUser();
         initRoutes_LondonParisLisbon();
         List<String> cities1 = new ArrayList<>(Arrays.asList("Paris","Lisbon"));
         List<String> cities2 = new ArrayList<>(Arrays.asList("London","Paris","Lisbon"));
         List<String> cities3 = new ArrayList<>(Arrays.asList("LoNdoN","ParIs"));
         try {
-            airportSystem.reserveFlight(UUID.randomUUID(), cities1, date,date);
-            airportSystem.reserveFlight(UUID.randomUUID(), cities2, date,date);
+            airportSystem.reserveFlight(username, cities1, date,date);
+            airportSystem.reserveFlight(username, cities2, date,date);
             fail();
         } catch (BookingFlightsNotPossibleException ignored) {
             System.out.println("One flight isn't possible, the pre-reservations should be removed.");
         } catch (RouteDoesntExistException ignored) {fail();}
         try {
-            airportSystem.reserveFlight(UUID.randomUUID(), cities3, date,date);
+            airportSystem.reserveFlight(username, cities3, date,date);
         } catch (RouteDoesntExistException | BookingFlightsNotPossibleException e) {
             fail();
         }
@@ -194,14 +208,15 @@ class AirportSystemTest {
      */
     @org.junit.jupiter.api.Test
     void reserveFlight_FullFlightException(){
+        initUser();
         addRoute("Paris","Lisbon", 1);
         List<String> cities1 = new ArrayList<>(Arrays.asList("Paris","Lisbon"));
 
         Assertions.assertDoesNotThrow( () -> {
-            airportSystem.reserveFlight(UUID.randomUUID(), cities1, date,date);
+            airportSystem.reserveFlight(username, cities1, date,date);
         });
         Assertions.assertThrows(BookingFlightsNotPossibleException.class, () ->
-                airportSystem.reserveFlight(UUID.randomUUID(), cities1, date,date));
+                airportSystem.reserveFlight(username, cities1, date,date));
     }
 
     /**
@@ -223,9 +238,9 @@ class AirportSystemTest {
     @ParameterizedTest
     @MethodSource("citiesDontExist")
     void reserveFlight_RouteDoesntExistException(List<String> cities){
-        initRoutes_LondonParisLisbon();
+        initUserAndRoutes_LondonParisLisbon();
         Assertions.assertThrows(RouteDoesntExistException.class, () ->
-                airportSystem.reserveFlight(UUID.randomUUID(), cities, date, date));
+                airportSystem.reserveFlight(username, cities, date, date));
     }
 
     //---------------------- Cancel Flights ----------------
@@ -237,7 +252,8 @@ class AirportSystemTest {
     void cancelFlightTest(){
         initRoutes_LondonParisLisbon();
         List<String> cities = new ArrayList<>(Arrays.asList("Paris","Lisbon"));
-        UUID client = UUID.randomUUID();
+        String client = "Hello";
+        registerAdmin(client,client);
 
         Assertions.assertDoesNotThrow( () -> {
             UUID reservation = airportSystem.reserveFlight(client, cities, date,date);
@@ -254,7 +270,8 @@ class AirportSystemTest {
         initRoutes_LondonParisLisbon();
         List<String> cities1 = new ArrayList<>(Arrays.asList("London","Paris", "Lisbon"));
         List<String> cities2 = new ArrayList<>(Arrays.asList(         "Paris", "Lisbon"));
-        UUID client = UUID.randomUUID();
+        String client = "Hello";
+        registerClient(client,client);
 
         Assertions.assertDoesNotThrow( () -> {
             UUID reservation = airportSystem.reserveFlight(client, cities1, date,date);
@@ -265,22 +282,35 @@ class AirportSystemTest {
 
     @org.junit.jupiter.api.Test
     void cancelFlight_NotCurrentUserException() {
-        initRoutes_LondonParisLisbon();
+        initUserAndRoutes_LondonParisLisbon();
+        registerAdmin(username+username,username);
         List<String> cities = new ArrayList<>(Arrays.asList("Paris", "Lisbon"));
 
         Assertions.assertThrows(ReservationDoesNotBelongToTheClientException.class, () -> {
-            UUID reservation = airportSystem.reserveFlight(UUID.randomUUID(), cities, date, date);
-            airportSystem.cancelFlight(UUID.randomUUID(), reservation);
+            UUID reservation = airportSystem.reserveFlight(username, cities, date, date);
+            airportSystem.cancelFlight(username + username, reservation);
+        });
+    }
+
+    @org.junit.jupiter.api.Test
+    void cancelFlight_UserNotFoundException() {
+        initUserAndRoutes_LondonParisLisbon();
+        List<String> cities = new ArrayList<>(Arrays.asList("Paris", "Lisbon"));
+
+        Assertions.assertThrows(UserNotFoundException.class, () -> {
+            UUID reservation = airportSystem.reserveFlight(username, cities, date, date);
+            airportSystem.cancelFlight(username + username, reservation);
         });
     }
 
     @org.junit.jupiter.api.Test
     void cancelFlight_ReservationNotFoundException() {
+        initUser();
         Assertions.assertThrows(ReservationNotFoundException.class, () ->
-                airportSystem.cancelFlight(UUID.randomUUID(), UUID.randomUUID()));
+                airportSystem.cancelFlight(username, UUID.randomUUID()));
         initRoutes_LondonParisLisbon();
         Assertions.assertThrows(ReservationNotFoundException.class, () ->
-            airportSystem.cancelFlight(UUID.randomUUID(), UUID.randomUUID()));
+            airportSystem.cancelFlight(username, UUID.randomUUID()));
     }
 
     //---------------------- Cancel Days ----------------
@@ -307,7 +337,8 @@ class AirportSystemTest {
     void cancelReservationAfterCancelDay(){
         initRoutes_LondonParisLisbon();
         List<String> cities = new ArrayList<>(Arrays.asList("Paris", "Lisbon"));
-        UUID client = UUID.randomUUID();
+        String client = "hello2";
+        registerAdmin(client,client);
         Assertions.assertThrows(ReservationNotFoundException.class, () -> {
             UUID reservation = airportSystem.reserveFlight(client, cities, date, date);
             airportSystem.cancelDay(date);
@@ -321,31 +352,31 @@ class AirportSystemTest {
      */
     @org.junit.jupiter.api.Test
     void cancelReservationAfterCancelDay1(){
-        initRoutes_LondonParisLisbon();
+        initUserAndRoutes_LondonParisLisbon();
         List<String> cities = new ArrayList<>(Arrays.asList("Paris", "Lisbon"));
         Assertions.assertThrows(BookingFlightsNotPossibleException.class, () -> {
             airportSystem.cancelDay(date);
-            airportSystem.reserveFlight(UUID.randomUUID(), cities, date, date);
+            airportSystem.reserveFlight(username, cities, date, date);
         });
     }
 
     @org.junit.jupiter.api.Test
     void cancelDayWithFlights(){
-        initRoutes_LondonParisLisbon();
+        initUserAndRoutes_LondonParisLisbon();
         List<String> cities = new ArrayList<>(Arrays.asList("Paris", "Lisbon"));
         Assertions.assertDoesNotThrow( () -> {
-            airportSystem.reserveFlight(UUID.randomUUID(), cities, date, date);
+            airportSystem.reserveFlight(username, cities, date, date);
             airportSystem.cancelDay(date);
         });
     }
 
     @org.junit.jupiter.api.Test
     void addFlightAfterDayCanceled(){
-        initRoutes_LondonParisLisbon();
+        initUserAndRoutes_LondonParisLisbon();
         List<String> cities = new ArrayList<>(Arrays.asList("Paris", "Lisbon"));
         Assertions.assertDoesNotThrow( () -> {
             airportSystem.cancelDay(date.plusDays(1));
-            airportSystem.reserveFlight(UUID.randomUUID(), cities, date, date);
+            airportSystem.reserveFlight(username, cities, date, date);
         });
     }
 

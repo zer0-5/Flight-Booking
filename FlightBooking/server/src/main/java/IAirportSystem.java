@@ -33,30 +33,30 @@ public interface IAirportSystem {
     /**
      * Reserves a flight given the connections, in the time interval.
      *
-     * @param userId the user's id.
-     * @param cities the connections.
-     * @param start  the start date of the interval.
-     * @param end    the end date of the interval.
-     * @return       the reservation's id.
+     * @param userName the user's name.
+     * @param cities   the connections.
+     * @param start    the start date of the interval.
+     * @param end      the end date of the interval.
+     * @return         the reservation's id.
      * @throws BookingFlightsNotPossibleException This can happen because the day is cancel,
      *                                              or because the possible flights are full.
      * @throws RouteDoesntExistException if there is no route possible.
      */
-    UUID reserveFlight(UUID userId, List<String> cities, LocalDate start, LocalDate end)
+    UUID reserveFlight(String userName, List<String> cities, LocalDate start, LocalDate end)
             throws BookingFlightsNotPossibleException, RouteDoesntExistException;
 
     /**
      * Cancels a flight.
      *
-     * @param userId                                        the id of the client
+     * @param userName                                      the name of the client
      * @param reservationId                                 the id of the reservation
      * @throws ReservationNotFoundException                 is launched if the reservation doesn't exist in the AirportSystem
      * @throws ReservationDoesNotBelongToTheClientException is launched if the reservation doesn't belong to the given
      * client
      * @return the deleted @see airport.Reservation .
      */
-     Reservation cancelFlight(UUID userId, UUID reservationId) throws ReservationNotFoundException,
-            ReservationDoesNotBelongToTheClientException;
+     Reservation cancelFlight(String userName, UUID reservationId) throws ReservationNotFoundException,
+            ReservationDoesNotBelongToTheClientException, UserNotFoundException;
 
     /**
      * Gets the existent routes.

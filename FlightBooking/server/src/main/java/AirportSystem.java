@@ -12,8 +12,6 @@ import java.util.stream.Collectors;
 
 public class AirportSystem implements IAirportSystem {
 
-    final String secretKey = "ssshhhhhhhhhhh!!!!";
-
     /**
      * Associates ID to the respective User
      */
@@ -276,14 +274,16 @@ public class AirportSystem implements IAirportSystem {
     /**
      * Reserves a flight given the connections, in the time interval.
      *
-     * @param userId the user's id.
-     * @param cities the connections.
-     * @param start  the start date of the interval.
-     * @param end    the end date of the interval.
-     * @return       the reservation's id.
+     * @param userName the user's name.
+     * @param cities   the connections.
+     * @param start    the start date of the interval.
+     * @param end      the end date of the interval.
+     * @return         the reservation's id.
      */
-    public UUID reserveFlight(UUID userId, List<String> cities, LocalDate start, LocalDate end)
+    public UUID reserveFlight(String userName, List<String> cities, LocalDate start, LocalDate end)
             throws BookingFlightsNotPossibleException, RouteDoesntExistException {
+        User user = usersById.get(userName);
+
         Set<Flight> flights;
         try {
             flights = getConnectedFlights(cities, start, end);
@@ -291,7 +291,7 @@ public class AirportSystem implements IAirportSystem {
             throw new BookingFlightsNotPossibleException();
         }
         Set<UUID> flightIds = flights.stream().map(e->e.id).collect(Collectors.toSet());
-        Reservation reservation = new Reservation(userId,flightIds);
+        Reservation reservation = new Reservation(user,flightIds);
         for( Flight flight : flights) {
             try {
                 flight.addReservation(reservation.id);
@@ -321,19 +321,22 @@ public class AirportSystem implements IAirportSystem {
     /**
      * Cancels a flight.
      *
-     * @param userId                                        the id of the client
+     * @param userName                                      the name of the client
      * @param reservationId                                 the id of the reservation
      * @throws ReservationNotFoundException                 is launched if the reservation doesn't exist in the AirportSystem
      * @throws ReservationDoesNotBelongToTheClientException is launched if the reservation doesn't belong to the given
-     * client
+     * @throws UserNotFoundException                        is launched if the given userName doesn't exist on the system
      * @return the deleted @see airport.Reservation .
      */
-    public Reservation cancelFlight(UUID userId, UUID reservationId) throws ReservationNotFoundException,
-            ReservationDoesNotBelongToTheClientException{
+    public Reservation cancelFlight(String userName, UUID reservationId) throws ReservationNotFoundException,
+            ReservationDoesNotBelongToTheClientException , UserNotFoundException {
+        User user = usersById.get(userName);
+        if (user == null)
+            throw new UserNotFoundException();
         Reservation reservation = this.reservationsById.remove(reservationId);
         if (reservation == null)
             throw new ReservationNotFoundException();
-        if (reservation.clientId != userId) {
+        if (!reservation.checksUser(user)) {
             this.reservationsById.put(reservation.id, reservation);
             throw new ReservationDoesNotBelongToTheClientException();
         }

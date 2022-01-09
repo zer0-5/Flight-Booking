@@ -1,5 +1,7 @@
 package airport;
 
+import users.User;
+
 import java.util.HashSet;
 import java.util.Set;
 import java.util.UUID;
@@ -17,7 +19,7 @@ public class Reservation {
     /**
      * Id of the client that owns this reservation.
      */
-    public final UUID clientId;
+    private final User client;
 
     /**
      * Flights with the connections of the reservation.
@@ -28,12 +30,12 @@ public class Reservation {
     /**
      * Constructor
      *
-     * @param clientId          the id of the Client.
+     * @param client            Client.
      * @param flightsIds        a set of flight's id.
      */
-    public Reservation(UUID clientId, Set<UUID> flightsIds) {
+    public Reservation(User client, Set<UUID> flightsIds) {
         this.id = UUID.randomUUID();
-        this.clientId = clientId;
+        this.client = client;
         this.flightIds = flightsIds;
     }
 
@@ -44,5 +46,17 @@ public class Reservation {
      */
     public Set<UUID> getFlightIds() {
         return new HashSet<>(flightIds);
+    }
+
+    /**
+     * Checks if the given user made the reservation
+     *
+     * @param user User
+     * @return true if are the same user
+     */
+    public boolean checksUser(User user) {
+        System.out.println(user.toString());
+        System.out.println(client.toString());
+        return client.equals(user);
     }
 }

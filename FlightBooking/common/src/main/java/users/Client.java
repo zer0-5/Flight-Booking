@@ -1,7 +1,7 @@
 package users;
 
 import java.util.ArrayDeque;
-import java.util.HashSet;
+import java.util.Objects;
 import java.util.Queue;
 
 /**
@@ -34,5 +34,18 @@ public class Client extends User {
 
     public void addNotification(Notification notification) {
         notifications.add(notification);
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        Client client = (Client) o;
+        return super.equals(o) && notifications.equals(client.notifications);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(notifications);
     }
 }
