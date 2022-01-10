@@ -41,9 +41,4 @@ public class Client extends User {
         Client client = (Client) o;
         return super.equals(o) && notifications.equals(client.notifications);
     }
-
-    @Override
-    public int hashCode() {
-        return Objects.hash(notifications);
-    }
 }

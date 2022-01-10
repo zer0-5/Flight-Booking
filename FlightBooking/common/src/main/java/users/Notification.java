@@ -20,9 +20,4 @@ public class Notification {
         return date.equals(that.date) &&
                 message.equals(that.message);
     }
-
-    @Override
-    public int hashCode() {
-        return Objects.hash(date, message);
-    }
 }
