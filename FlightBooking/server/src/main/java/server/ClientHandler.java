@@ -61,13 +61,13 @@ public class ClientHandler implements Runnable {
                     logger.info("Request with type " + RequestType.getRequestType(frame.tag()) + " has been successfully handled!");
 
                 } catch (UserNotFoundException | InvalidCredentialsException | AlreadyLoggedInException e) {
-                     List<byte[]> list = new ArrayList<>();
-                     list.add("ERROR".getBytes(StandardCharsets.UTF_8));
-                     if (e.getMessage() != null) list.add(e.getMessage().getBytes(StandardCharsets.UTF_8));
+                    List<byte[]> list = new ArrayList<>();
+                    list.add("ERROR".getBytes(StandardCharsets.UTF_8));
+                    if (e.getMessage() != null) list.add(e.getMessage().getBytes(StandardCharsets.UTF_8));
 
-                     logger.info("Request with type " + RequestType.getRequestType(frame.tag()) + " has result in a error: " + e.getMessage());
+                    logger.info("Request with type " + RequestType.getRequestType(frame.tag()) + " has result in a error: " + e.getMessage());
 
-                     taggedConnection.send(frame.tag(), list);
+                    taggedConnection.send(frame.tag(), list);
                 }
             }
             taggedConnection.close();
@@ -90,7 +90,7 @@ public class ClientHandler implements Runnable {
     }
 
     private void getRoutes(List<byte[]> data) throws IOException {
-        sendOk(GET_ROUTES.ordinal(), new ArrayList<>(airportSystem.getRoutes().stream().map(Route::serialize).collect(Collectors.toList())));
+        sendOk(GET_ROUTES.ordinal(), airportSystem.getRoutes().stream().map(Route::serialize).collect(Collectors.toList()));
         //airportSystem.getRoutes();
         // TODO:
     }
@@ -105,8 +105,10 @@ public class ClientHandler implements Runnable {
         // TODO:
     }
 
-    private void register(List<byte[]> data) {
-        // TODO: airportSystem.register(data.get(0));
+    private void register(List<byte[]> data) throws UsernameAlreadyExistsException, IOException, AlreadyLoggedInException {
+        if (isLoggedIn()) throw new AlreadyLoggedInException(account);
+        airportSystem.registerClient(new String(data.get(0)), new String(data.get(1)));
+        sendOk(REGISTER.ordinal(), new ArrayList<>());
     }
 
     public boolean isLoggedIn() {

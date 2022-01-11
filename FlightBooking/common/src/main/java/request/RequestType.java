@@ -10,10 +10,10 @@ public enum RequestType {
     INSERT_ROUTE,
     CANCEL_DAY,
 
-    // User commands
+    // Client commands
+    GET_ROUTES,
     RESERVE,
     CANCEL_RESERVATION,
-    GET_ROUTES,
     ;
 
 

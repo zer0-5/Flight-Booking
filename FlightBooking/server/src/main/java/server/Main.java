@@ -1,6 +1,8 @@
 package server;
 
 
+import exceptions.RouteAlreadyExistsException;
+import exceptions.RouteDoesntExistException;
 import exceptions.UsernameAlreadyExistsException;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -18,9 +20,12 @@ public class Main {
     @SuppressWarnings({"CanBeFinal", "FieldMayBeFinal", "FieldCanBeLocal"})
     private static boolean running = true;
 
-    public static void main(String[] args) throws IOException, UsernameAlreadyExistsException {
+    public static void main(String[] args) throws IOException, UsernameAlreadyExistsException, RouteDoesntExistException, RouteAlreadyExistsException {
         IAirportSystem iAirportSystem = new AirportSystem();
+
         iAirportSystem.registerAdmin("admin", "admin");
+        iAirportSystem.registerClient("1", "1");
+        iAirportSystem.addRoute("Porto", "Lisbon", 200);
 
 
         try (ServerSocket serverSocket = new ServerSocket(PORT)) {

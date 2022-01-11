@@ -15,6 +15,7 @@ import java.util.Scanner;
 import java.util.stream.Collectors;
 
 import static connection.TaggedConnection.Frame;
+import static request.RequestType.*;
 
 public class Client implements Runnable {
     private static final Logger logger = LogManager.getLogger(Client.class);
@@ -36,9 +37,9 @@ public class Client implements Runnable {
         try {
             boolean quit = false;
             while (!quit) {
-                System.out.print(RequestType.getMenu());
+                System.out.print(getMenu());
                 int option = Integer.parseInt(in.nextLine());
-                switch (RequestType.getRequestType(option)) {
+                switch (getRequestType(option)) {
                     case REGISTER -> register();
                     case LOGIN -> login();
                     case EXIT -> {
@@ -63,7 +64,7 @@ public class Client implements Runnable {
     }
 
     private void quit() throws IOException {
-        taggedConnection.send(RequestType.EXIT.ordinal(), new ArrayList<>());
+        taggedConnection.send(EXIT.ordinal(), new ArrayList<>());
     }
 
     /**
@@ -80,7 +81,7 @@ public class Client implements Runnable {
         args.add(username.getBytes(StandardCharsets.UTF_8));
         args.add(password.getBytes(StandardCharsets.UTF_8));
 
-        taggedConnection.send(RequestType.LOGIN.ordinal(), args);
+        taggedConnection.send(LOGIN.ordinal(), args);
 
         Frame response = taggedConnection.receive();
 
@@ -100,7 +101,7 @@ public class Client implements Runnable {
         if (!logged_in) throw new NotLoggedInException();
 
         List<byte[]> list = new ArrayList<>();
-        taggedConnection.send(RequestType.GET_ROUTES.ordinal(), list);
+        taggedConnection.send(GET_ROUTES.ordinal(), list);
 
         Frame response = taggedConnection.receive();
 
@@ -117,8 +118,10 @@ public class Client implements Runnable {
 
         System.out.println("Insert origin route: ");
         String origin = in.nextLine();
+
         System.out.println("Insert destiny route: ");
         String destiny = in.nextLine();
+
         System.out.println("Insert capacity of the route: ");
         int capacity = Integer.parseInt(in.nextLine());
 
@@ -126,20 +129,35 @@ public class Client implements Runnable {
         list.add(origin.getBytes(StandardCharsets.UTF_8));
         list.add(destiny.getBytes(StandardCharsets.UTF_8));
         list.add(ByteBuffer.allocate(Integer.BYTES).putInt(capacity).array());
-        taggedConnection.send(RequestType.INSERT_ROUTE.ordinal(), list);
+        taggedConnection.send(INSERT_ROUTE.ordinal(), list);
 
         Frame response = taggedConnection.receive();
 
         if (checkError(response)) printError(response);
-        else logger.info("Route successfully inserted!");
+        else System.out.println("Route successfully inserted!");
     }
 
     private void cancelDay() {
         // TODO:
     }
 
-    private void register() {
-        // TODO:
+    private void register() throws IOException {
+        System.out.println("Insert username: ");
+        String username = in.nextLine();
+
+        System.out.println("Insert password: ");
+        String password = in.nextLine();
+
+        List<byte[]> list = new ArrayList<>();
+        list.add(username.getBytes(StandardCharsets.UTF_8));
+        list.add(password.getBytes(StandardCharsets.UTF_8));
+
+        taggedConnection.send(REGISTER.ordinal(), list);
+
+        Frame response = taggedConnection.receive();
+
+        if (checkError(response)) printError(response);
+        else System.out.println("Account successfully registered!");
     }
 
     private boolean checkError(Frame frame) {
