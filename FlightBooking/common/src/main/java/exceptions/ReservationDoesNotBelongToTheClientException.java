@@ -15,6 +15,6 @@ public class ReservationDoesNotBelongToTheClientException extends Exception {
     }
 
     public ReservationDoesNotBelongToTheClientException(UUID reservation, String client) {
-        super("Reservation " + reservation + " [id] doesn't belong to the client " + client +  " [username]");
+        super("Reservation " + reservation + " [id] doesn't belong to the client " + client + " [username]");
     }
 }

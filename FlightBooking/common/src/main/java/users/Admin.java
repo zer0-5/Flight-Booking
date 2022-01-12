@@ -7,6 +7,7 @@ public class Admin extends User {
 
     /**
      * Constructors
+     *
      * @param username the username.
      * @param password the password.
      */

@@ -15,19 +15,18 @@ public abstract class User {
      * Username.
      */
     private final String username;
-
+    /**
+     * Set of the reservations of the client
+     */
+    private final Set<UUID> reservations;
     /**
      * Password.
      */
     private String password;
 
     /**
-     * Set of the reservations of the client
-     */
-    private final Set<UUID> reservations;
-
-    /**
      * Constructor
+     *
      * @param username the username.
      * @param password the password.
      */
@@ -39,15 +38,17 @@ public abstract class User {
 
     /**
      * Checks if the password given is valid to this user.
+     *
      * @param password Password to check.
      * @return Is password is correct.
      */
     public boolean validPassword(String password) {
-        return BCrypt.checkpw(password,this.password);
+        return BCrypt.checkpw(password, this.password);
     }
 
     /**
      * Get the username of this user.
+     *
      * @return Username of this object.
      */
     public String getUsername() {
@@ -59,7 +60,7 @@ public abstract class User {
      *
      * @param newPassword new password.
      */
-    public void changerUserPassword(String newPassword){
+    public void changerUserPassword(String newPassword) {
         this.password = BCrypt.hashpw(newPassword, BCrypt.gensalt());
     }
 

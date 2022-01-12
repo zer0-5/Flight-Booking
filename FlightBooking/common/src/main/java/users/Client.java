@@ -1,6 +1,7 @@
 package users;
 
-import java.util.*;
+import java.util.ArrayDeque;
+import java.util.Queue;
 
 /**
  * Client class.
@@ -14,6 +15,7 @@ public class Client extends User {
 
     /**
      * Constructor
+     *
      * @param username the username.
      * @param password the password.
      */
@@ -22,7 +24,7 @@ public class Client extends User {
         this.notifications = new ArrayDeque<>();
     }
 
-    public boolean emptyNotifications(){
+    public boolean emptyNotifications() {
         return notifications.isEmpty();
     }
 

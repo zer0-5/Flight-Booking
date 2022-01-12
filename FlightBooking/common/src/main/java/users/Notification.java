@@ -1,7 +1,6 @@
 package users;
 
 import java.time.LocalDateTime;
-import java.util.Objects;
 
 public class Notification {
     private final LocalDateTime date;

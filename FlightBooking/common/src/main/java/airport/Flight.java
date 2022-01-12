@@ -57,7 +57,7 @@ public class Flight {
      *
      * @param reservationId the id of the reservation.
      * @return true if this set did not already contain the specified element.
-     * @exception FullFlightException is launched if aren't seats available.
+     * @throws FullFlightException is launched if aren't seats available.
      */
     public boolean addReservation(UUID reservationId) throws FullFlightException {
         if (route.capacity > reservations.size())
