@@ -82,13 +82,13 @@ public class AirportSystem implements IAirportSystem {
         String origUpperCase = orig.toUpperCase();
         String destUpperCase = dest.toUpperCase();
         if (origUpperCase.equals(destUpperCase)) {
-            throw new RouteDoesntExistException();
+            throw new RouteDoesntExistException(orig, dest);
         }
         Route newRoute = new Route(orig, dest, capacity);
         Map<String,Route> connectionsByCityDest = connectionsByCityOrig.get(origUpperCase);
         if (connectionsByCityDest != null){
             if ( connectionsByCityDest.putIfAbsent(destUpperCase,newRoute) != null)
-                throw new RouteAlreadyExistsException();
+                throw new RouteAlreadyExistsException(orig, dest);
         }
         else {
             connectionsByCityDest = new HashMap<>();
@@ -109,10 +109,10 @@ public class AirportSystem implements IAirportSystem {
         String destUpperCase = dest.toUpperCase();
         Map<String,Route> routesByDestCity = connectionsByCityOrig.get(origUpperCase);
         if (routesByDestCity == null || routesByDestCity.isEmpty())
-            throw new RouteDoesntExistException();
+            throw new RouteDoesntExistException(orig, dest);
         Route route = routesByDestCity.get(destUpperCase);
         if (route == null)
-            throw new RouteDoesntExistException();
+            throw new RouteDoesntExistException(orig, dest);
         return route;
     }
 
@@ -205,7 +205,7 @@ public class AirportSystem implements IAirportSystem {
      * @return The available flights
      */
     private Set<Flight> getConnectedFlights(List<String> cities, LocalDate start, LocalDate end)
-            throws FullFlightException, RouteDoesntExistException {
+            throws BookingFlightsNotPossibleException, RouteDoesntExistException {
         LocalDate dateToSearch = start;
         Queue<Route> routes;
         routes = getRoutesByCities(cities);
@@ -220,7 +220,7 @@ public class AirportSystem implements IAirportSystem {
             if (dateToSearch.isAfter(end)) {
                 for(Flight flight : flights)
                     flight.cancelSeat();
-                throw new FullFlightException();
+                throw new BookingFlightsNotPossibleException();
             }
 
             if(invalidDate(dateToSearch)) {
@@ -280,6 +280,7 @@ public class AirportSystem implements IAirportSystem {
      * @param end      the end date of the interval.
      * @return         the reservation's id.
      */
+    // FIXME change strategy -> locks flights
     public UUID reserveFlight(String userName, List<String> cities, LocalDate start, LocalDate end)
             throws BookingFlightsNotPossibleException, RouteDoesntExistException {
         User user = usersById.get(userName);
@@ -287,7 +288,7 @@ public class AirportSystem implements IAirportSystem {
         Set<Flight> flights;
         try {
             flights = getConnectedFlights(cities, start, end);
-        } catch (FullFlightException e) {
+        } catch (BookingFlightsNotPossibleException e) {
             throw new BookingFlightsNotPossibleException();
         }
         Set<UUID> flightIds = flights.stream().map(e->e.id).collect(Collectors.toSet());
@@ -334,15 +335,15 @@ public class AirportSystem implements IAirportSystem {
 
         Reservation reservation = this.reservationsById.remove(reservationId);
         if (reservation == null)
-            throw new ReservationNotFoundException();
+            throw new ReservationNotFoundException(reservationId);
 
         User user = usersById.get(userName);
         if (user == null) {
             this.reservationsById.put(reservationId,reservation);
-            throw new UserNotFoundException();
+            throw new UserNotFoundException("User not found: " + userName + " [username]");
         }
         if (!user.containsReservation(reservationId))
-            throw new ReservationDoesNotBelongToTheClientException();
+            throw new ReservationDoesNotBelongToTheClientException(reservationId, userName);
 
 
         cancelReservation(reservation);
@@ -358,7 +359,7 @@ public class AirportSystem implements IAirportSystem {
      */
     public Set<Reservation> cancelDay(LocalDate day) throws DayAlreadyCanceledException {
         if (invalidDate(day))
-            throw new DayAlreadyCanceledException();
+            throw new DayAlreadyCanceledException(day);
         this.canceledDays.add(day);
         Set<Reservation> canceledReservations = new HashSet<>();
         Map<Route,Flight> flightsOneDay = this.flightsByDate.remove(day);
@@ -402,7 +403,7 @@ public class AirportSystem implements IAirportSystem {
     private void register(User user) throws UsernameAlreadyExistsException {
         String username = user.getUsername();
         if (usersById.containsKey(username))
-            throw new UsernameAlreadyExistsException();
+            throw new UsernameAlreadyExistsException("Username already exists: " + username);
         usersById.put(username, user);
     }
 
@@ -446,10 +447,10 @@ public class AirportSystem implements IAirportSystem {
             throws UserNotFoundException, InvalidCredentialsException {
         User user = usersById.get(username);
         if (user == null)
-            throw new UserNotFoundException();
+            throw new UserNotFoundException("User not found: " + username + " [username]");
 
         if (!user.validPassword(password))
-            throw new InvalidCredentialsException();
+            throw new InvalidCredentialsException("Invalid credentials: " + username + " [username]");
         return user;
     }
 }

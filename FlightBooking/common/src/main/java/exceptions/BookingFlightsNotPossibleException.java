@@ -5,4 +5,12 @@ package exceptions;
  * This can happen because the day is cancel, or because the possible flights are full.
  */
 public class BookingFlightsNotPossibleException extends Exception{
+
+    public BookingFlightsNotPossibleException() {
+        super("Booking Flights not possible");
+    }
+
+    public BookingFlightsNotPossibleException(String message) {
+        super(message);
+    }
 }

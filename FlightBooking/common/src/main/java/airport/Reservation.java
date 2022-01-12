@@ -55,8 +55,6 @@ public class Reservation {
      * @return true if are the same user
      */
     public boolean checksUser(User user) {
-        System.out.println(user.toString());
-        System.out.println(client.toString());
         return client.equals(user);
     }
 }

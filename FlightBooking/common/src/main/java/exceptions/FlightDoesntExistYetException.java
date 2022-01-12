@@ -5,4 +5,11 @@ package exceptions;
  * So, the flight could still be possible.
  */
 public class FlightDoesntExistYetException extends Exception{
+
+    public FlightDoesntExistYetException() {
+    }
+
+    public FlightDoesntExistYetException(String message) {
+        super(message);
+    }
 }
