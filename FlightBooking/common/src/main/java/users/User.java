@@ -1,5 +1,9 @@
 package users;
 
+import encryption.BCrypt;
+
+import java.util.HashSet;
+import java.util.Set;
 import java.util.UUID;
 
 /**
@@ -8,15 +12,13 @@ import java.util.UUID;
 public abstract class User {
 
     /**
-     * Id.
-     */
-    private final UUID id;
-
-    /**
      * Username.
      */
     private final String username;
-
+    /**
+     * Set of the reservations of the client
+     */
+    private final Set<UUID> reservations;
     /**
      * Password.
      */
@@ -29,9 +31,9 @@ public abstract class User {
      * @param password the password.
      */
     public User(String username, String password) {
-        this.id = UUID.randomUUID();
-        this.password = password;
+        this.password = BCrypt.hashpw(password, BCrypt.gensalt());
         this.username = username;
+        this.reservations = new HashSet<>();
     }
 
     /**
@@ -41,7 +43,7 @@ public abstract class User {
      * @return Is password is correct.
      */
     public boolean validPassword(String password) {
-        return this.password.equals(password);
+        return BCrypt.checkpw(password, this.password);
     }
 
     /**
@@ -54,19 +56,32 @@ public abstract class User {
     }
 
     /**
-     * Get the id fo this user.
-     * @return ID
-     */
-    public UUID getId() {
-        return id;
-    }
-
-    /**
      * Change password of a user.
      *
      * @param newPassword new password.
      */
-    public void changerUserPassword(String newPassword){
-        this.password = newPassword;
+    public void changerUserPassword(String newPassword) {
+        this.password = BCrypt.hashpw(newPassword, BCrypt.gensalt());
+    }
+
+    public void addReservation(UUID reservation) {
+        this.reservations.add(reservation);
+    }
+
+    public void removeReservation(UUID reservation) {
+        this.reservations.remove(reservation);
+    }
+
+    public boolean containsReservation(UUID reservation) {
+        return this.reservations.contains(reservation);
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        User user = (User) o;
+        return username.equals(user.username) &&
+                password.equals(user.password);
     }
 }

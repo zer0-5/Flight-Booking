@@ -17,10 +17,6 @@ public class Route {
     private static final Logger logger = LogManager.getLogger(Route.class);
 
     /**
-     * ID of the route.
-     */
-    public final UUID id;
-    /**
      * City of departure of the flight.
      */
     public final String origin;
@@ -42,7 +38,6 @@ public class Route {
      * @param capacity    the capacity of each flight.
      */
     public Route(String origin, String destination, int capacity) {
-        this.id = UUID.randomUUID();
         this.origin = origin;
         this.destination = destination;
         this.capacity = capacity;
