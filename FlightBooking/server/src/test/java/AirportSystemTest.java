@@ -275,7 +275,7 @@ class AirportSystemTest {
             User user = airportSystem.registerClient(client, client);
             UUID reservation = airportSystem.reserveFlight(client, cities, date, date);
             assert user.containsReservation(reservation);
-            airportSystem.cancelFlight(client, reservation);
+            airportSystem.cancelReservation(client, reservation);
             assert !user.containsReservation(reservation);
         });
     }
@@ -293,7 +293,7 @@ class AirportSystemTest {
 
         Assertions.assertDoesNotThrow(() -> {
             UUID reservation = airportSystem.reserveFlight(client, cities1, date, date);
-            airportSystem.cancelFlight(client, reservation);
+            airportSystem.cancelReservation(client, reservation);
             airportSystem.reserveFlight(client, cities2, date, date);
         });
     }
@@ -306,7 +306,7 @@ class AirportSystemTest {
 
         Assertions.assertThrows(ReservationDoesNotBelongToTheClientException.class, () -> {
             UUID reservation = airportSystem.reserveFlight(username, cities, date, date);
-            airportSystem.cancelFlight(username + username, reservation);
+            airportSystem.cancelReservation(username + username, reservation);
         });
     }
 
@@ -317,7 +317,7 @@ class AirportSystemTest {
 
         Assertions.assertThrows(UserNotFoundException.class, () -> {
             UUID reservation = airportSystem.reserveFlight(username, cities, date, date);
-            airportSystem.cancelFlight(username + username, reservation);
+            airportSystem.cancelReservation(username + username, reservation);
         });
     }
 
@@ -330,7 +330,7 @@ class AirportSystemTest {
             airportSystem.registerClient(s, s);
             UUID reservation = airportSystem.reserveFlight(s, cities, date, date);
             Assertions.assertThrows(ReservationDoesNotBelongToTheClientException.class, () ->
-                    airportSystem.cancelFlight(username, reservation));
+                    airportSystem.cancelReservation(username, reservation));
         });
 
     }
@@ -341,9 +341,9 @@ class AirportSystemTest {
     void cancelFlight_ReservationNotFoundException() {
         initUser();
         Assertions.assertThrows(ReservationNotFoundException.class, () ->
-                airportSystem.cancelFlight(username, UUID.randomUUID()));
+                airportSystem.cancelReservation(username, UUID.randomUUID()));
         Assertions.assertThrows(ReservationNotFoundException.class, () ->
-                airportSystem.cancelFlight(username, UUID.randomUUID()));
+                airportSystem.cancelReservation(username, UUID.randomUUID()));
     }
 
     @org.junit.jupiter.api.Test
@@ -370,7 +370,7 @@ class AirportSystemTest {
         Assertions.assertThrows(ReservationNotFoundException.class, () -> {
             UUID reservation = airportSystem.reserveFlight(client, cities, date, date);
             airportSystem.cancelDay(date);
-            airportSystem.cancelFlight(client, reservation);
+            airportSystem.cancelReservation(client, reservation);
         });
     }
 

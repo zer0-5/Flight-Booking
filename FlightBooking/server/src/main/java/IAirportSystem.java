@@ -55,7 +55,7 @@ public interface IAirportSystem {
      * @throws ReservationDoesNotBelongToTheClientException is launched if the reservation doesn't belong to the given
      *                                                      client
      */
-    Reservation cancelFlight(String userName, UUID reservationId) throws ReservationNotFoundException,
+    Reservation cancelReservation(String userName, UUID reservationId) throws ReservationNotFoundException,
             ReservationDoesNotBelongToTheClientException, UserNotFoundException;
 
     /**

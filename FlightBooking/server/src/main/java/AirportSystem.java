@@ -329,7 +329,7 @@ public class AirportSystem implements IAirportSystem {
      * @throws ReservationDoesNotBelongToTheClientException is launched if the reservation doesn't belong to the given
      * @throws UserNotFoundException                        is launched if the given userName doesn't exist on the system
      */
-    public Reservation cancelFlight(String userName, UUID reservationId) throws ReservationNotFoundException,
+    public Reservation cancelReservation(String userName, UUID reservationId) throws ReservationNotFoundException,
             ReservationDoesNotBelongToTheClientException, UserNotFoundException {
 
         Reservation reservation = this.reservationsById.remove(reservationId);
