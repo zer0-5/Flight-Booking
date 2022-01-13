@@ -80,7 +80,6 @@ class AirportSystemTest {
         addRoute("London", "Paris", 1);
         addRoute("Paris", "Lisbon", 1);
     }
-
     // -------------------- Add Route -------------------
 
     private void initUser() {
@@ -91,16 +90,15 @@ class AirportSystemTest {
         initUser();
         initRoutes_LondonParisLisbon();
     }
-
     @DisplayName("Add Route")
     @ParameterizedTest
     @CsvSource({"Lisbon,London,30", "London,Paris,1", "Lisbon,Paris,23"})
     public void addRoute(String orig, String dest, int capacity) {
         Assertions.assertDoesNotThrow(() -> {
-            System.out.println("Add route: " + orig + "-> " + dest + " (" + capacity + ")");
             airportSystem.addRoute(orig, dest, capacity);
         });
     }
+/*
 
     //--------------------- Get Routes ----------------------
 
@@ -118,7 +116,7 @@ class AirportSystemTest {
         Assertions.assertThrows(RouteDoesntExistException.class, () ->
                 airportSystem.addRoute(orig, dest, capacity));
     }
-
+*/
     /**
      * Test  to verify if the route stores with case insensivity.
      * We create one root, and test if we can get roots with names that have other "camel cases" in name.
@@ -144,7 +142,7 @@ class AirportSystemTest {
             }
         });
     }
-
+/*
     @ParameterizedTest
     @CsvSource({"Lisbon,Paris", "Paris,Lisbon"})
     public void getRouteDoesntExistException(String orig, String dest) {
@@ -197,7 +195,7 @@ class AirportSystemTest {
             airportSystem.reserveFlight(username, cities1, date, date.plusDays(1));
         });
     }
-
+*/
     /**
      * Test to check if the pre-reservations are removed if the full flight isn't possible.
      * Example of the tested situation:
@@ -270,7 +268,6 @@ class AirportSystemTest {
         initRoutes_LondonParisLisbon();
         List<String> cities = new ArrayList<>(Arrays.asList("Paris", "Lisbon"));
         String client = "Hello";
-
         Assertions.assertDoesNotThrow(() -> {
             User user = airportSystem.registerClient(client, client);
             UUID reservation = airportSystem.reserveFlight(client, cities, date, date);
@@ -367,8 +364,10 @@ class AirportSystemTest {
         List<String> cities = new ArrayList<>(Arrays.asList("Paris", "Lisbon"));
         String client = "hello2";
         registerAdmin(client, client);
+        System.out.println("O erro está aqui <------------------");
         Assertions.assertThrows(ReservationNotFoundException.class, () -> {
             UUID reservation = airportSystem.reserveFlight(client, cities, date, date);
+            System.out.println("Quero cancelar: " + reservation);
             airportSystem.cancelDay(date);
             airportSystem.cancelReservation(client, reservation);
         });

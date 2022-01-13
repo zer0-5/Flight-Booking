@@ -5,6 +5,7 @@ import users.User;
 import java.util.HashSet;
 import java.util.Set;
 import java.util.UUID;
+import java.util.concurrent.locks.ReentrantLock;
 
 /**
  * Represents the reservation of one or multiple flights.
@@ -27,6 +28,8 @@ public class Reservation {
      */
     private final Set<Flight> flights;
 
+    private final ReentrantLock lockFlights;
+
     /**
      * Constructor
      *
@@ -37,25 +40,23 @@ public class Reservation {
         this.id = UUID.randomUUID();
         this.client = client;
         this.flights = flightsIds;
+        this.lockFlights = new ReentrantLock();
     }
 
-    /**
-     * Return all flight ids from this reservation.
-     *
-     * @return Flight ids
-     */
-    public Set<Flight> getFlights() {
-        return new HashSet<>(flights);
-    }
 
     /**
      * Cancel the reservation on all flights involved in the given reservation
      *
      */
     public void cancelReservation() {
-        for (Flight flight : flights) {
-            if (flight != null)
-                flight.removeReservation(this.id);
+        try {
+            lockFlights.lock();
+            for (Flight flight : flights) {
+                if (flight != null)
+                    flight.removeReservation(this);
+            }
+        } finally {
+            lockFlights.unlock();
         }
     }
 

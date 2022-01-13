@@ -15,20 +15,20 @@ public class AirportSystem implements IAirportSystem {
     /**
      * Associates ID to the respective User
      */
-    // lock Read / write
+    // TODO lock Read / write
     private final Map<String, User> usersById;
 
     /**
      * Associates each city, by name, with the flights that leave that city.
      */
-    // lock Read / write
-            // lock Read / write
+    // TODO lock Read / write
+            // TODO lock Read / write
     private final Map<String, Map<String, Route>> connectionsByCityOrig;
 
     /**
      * Associates each ID to the respective flight
      */
-    // lock Read / write
+    // TODO lock Read / write
     private final Map<UUID, Flight> flightsById;
 
     /**
@@ -36,21 +36,21 @@ public class AirportSystem implements IAirportSystem {
      * If a connection exists, but the fly in that day doesn't, then the flight will be created.
      * We can only have one flight by connection in each day.
      */
-    // lock Read / write
-        // lock Read / write
+    // TODO lock Read / write
+        // TODO lock Read / write
     private final Map<LocalDate, Map<Route, Flight>> flightsByDate;
 
     /**
      * Days cancelled by the administrator.
      * This is used to avoid reservations in cancelled days.
      */
-    // lock Read / write
+    // TODO lock Read / write
     private final Set<LocalDate> canceledDays;
 
     /**
      * Associates each reservation to his id.
      */
-    // lock Read / write
+    // TODO lock Read / write
     private final Map<UUID, Reservation> reservationsById;
 
     /**
@@ -225,7 +225,7 @@ public class AirportSystem implements IAirportSystem {
 
             if (dateToSearch.isAfter(end)) {
                 for (Flight flight : flights)
-                    flight.cancelSeat();
+                    flight.unlock();
                 throw new BookingFlightsNotPossibleException();
             }
 
@@ -241,9 +241,9 @@ public class AirportSystem implements IAirportSystem {
                 flight = addFlight(route, dateToSearch);
             }
 
-            try {
-                flight.preReservationSeat();
-            } catch (FullFlightException ignored) {
+            if (flight.seatAvailable())
+                flight.lock();
+            else {
                 dateToSearch = dateToSearch.plusDays(1);
                 continue;
             }
@@ -290,26 +290,35 @@ public class AirportSystem implements IAirportSystem {
     // FIXME change strategy -> locks flights
     public UUID reserveFlight(String userName, List<String> cities, LocalDate start, LocalDate end)
             throws BookingFlightsNotPossibleException, RouteDoesntExistException {
-        User user = usersById.get(userName);
+            User user = usersById.get(userName);
 
-        Set<Flight> flights;
-        try {
-            flights = getConnectedFlights(cities, start, end);
-        } catch (BookingFlightsNotPossibleException e) {
-            throw new BookingFlightsNotPossibleException();
-        }
-        //Set<UUID> flightIds = flights.stream().map(e -> e.id).collect(Collectors.toSet());
-        Reservation reservation = new Reservation(user, flights);
-        for (Flight flight : flights) {
+            Set<Flight> flights;
             try {
-                flight.addReservation(reservation.id);
-                user.addReservation(reservation.id);
-            } catch (FullFlightException ignored) {
-                // Shouldn't happen
+                flights = getConnectedFlights(cities, start, end);
+            } catch (BookingFlightsNotPossibleException e) {
                 throw new BookingFlightsNotPossibleException();
             }
+            // Set<UUID> flightIds = flights.stream().map(e -> e.id).collect(Collectors.toSet());
+            Reservation reservation = new Reservation(user, flights);
+            reservationsById.put(reservation.id, reservation);
+            user.addReservation(reservation.id);
+
+        try {
+            for (Flight flight: flights) {
+                flight.addReservation(reservation);
+               // flight.unlock();
+                //flights.remove(flight);
+            }
+        } catch (FullFlightException e) {
+            // nao devia acontecer
+            throw new BookingFlightsNotPossibleException();
         }
-        reservationsById.put(reservation.id, reservation);
+        finally {
+            for (Flight flight: flights) {
+                flight.unlock();
+            }
+        }
+
         return reservation.id;
     }
 
@@ -327,9 +336,10 @@ public class AirportSystem implements IAirportSystem {
             ReservationDoesNotBelongToTheClientException, UserNotFoundException {
 
         Reservation reservation = this.reservationsById.remove(reservationId);
-        if (reservation == null)
-            throw new ReservationNotFoundException(reservationId);
 
+        if (reservation == null) {
+            throw new ReservationNotFoundException(reservationId);
+        }
         User user = usersById.get(userName);
         if (user == null) {
             this.reservationsById.put(reservationId, reservation);
@@ -342,6 +352,13 @@ public class AirportSystem implements IAirportSystem {
         reservation.cancelReservation();
         user.removeReservation(reservationId);
         return reservation;
+    }
+
+    private void cancelReservation(Set<Reservation> reservations) {
+        for (Reservation reservation : reservations) {
+            //reservation.cancelReservation();
+            this.reservationsById.remove(reservation.id);
+        }
     }
 
     /**
@@ -364,14 +381,18 @@ public class AirportSystem implements IAirportSystem {
             for (Flight flight : flights) {
                 // Remove flight from flightsById
                 this.flightsById.remove(flight.id);
-                for (UUID reservationId : flight.getReservations()) {
-                    // Remove reservation from reservationsById
-                    Reservation reservation = reservationsById.remove(reservationId);
-                    reservation.cancelReservation();
-                    canceledReservations.add(reservation);
-                }
+                //TOdo
+                //for (UUID reservationId : flight.getReservations()) {
+                //    // Remove reservation from reservationsById
+                //    Reservation reservation = reservationsById.remove(reservationId);
+                //    reservation.cancelReservation();
+                //    canceledReservations.add(reservation);
+                //}
+                canceledReservations.addAll(flight.getReservations());
+                flight.cancelFlight();
             }
         }
+        cancelReservation(canceledReservations);
         return canceledReservations;
     }
 
