@@ -2,6 +2,7 @@ import airport.Flight;
 import airport.Reservation;
 import airport.Route;
 import exceptions.*;
+import locks.LockObject;
 import users.Admin;
 import users.Client;
 import users.User;
@@ -22,8 +23,7 @@ public class AirportSystem implements IAirportSystem {
      * Associates each city, by name, with the flights that leave that city.
      */
     // TODO lock Read / write
-            // TODO lock Read / write
-    private final Map<String, Map<String, Route>> connectionsByCityOrig;
+    private final Map<String, LockObject<Map<String, Route>>> connectionsByCityOrig;
 
     /**
      * Associates each ID to the respective flight
@@ -37,8 +37,7 @@ public class AirportSystem implements IAirportSystem {
      * We can only have one flight by connection in each day.
      */
     // TODO lock Read / write
-        // TODO lock Read / write
-    private final Map<LocalDate, Map<Route, Flight>> flightsByDate;
+    private final Map<LocalDate, LockObject<Map<Route, Flight>>> flightsByDate;
 
     /**
      * Days cancelled by the administrator.
@@ -93,14 +92,15 @@ public class AirportSystem implements IAirportSystem {
             throw new RouteDoesntExistException(orig, dest);
         }
         Route newRoute = new Route(orig, dest, capacity);
-        Map<String, Route> connectionsByCityDest = connectionsByCityOrig.get(origUpperCase);
-        if (connectionsByCityDest != null) {
+        LockObject<Map<String, Route>> connectionsByCityDestWithLock = connectionsByCityOrig.get(origUpperCase);
+        if (connectionsByCityDestWithLock != null) {
+            Map<String,Route> connectionsByCityDest = connectionsByCityDestWithLock.elem();
             if (connectionsByCityDest.putIfAbsent(destUpperCase, newRoute) != null)
                 throw new RouteAlreadyExistsException(orig, dest);
         } else {
-            connectionsByCityDest = new HashMap<>();
+            Map<String,Route> connectionsByCityDest = new HashMap<>();
             connectionsByCityDest.put(destUpperCase, newRoute);
-            connectionsByCityOrig.put(origUpperCase, connectionsByCityDest);
+            connectionsByCityOrig.put(origUpperCase, new LockObject<>(connectionsByCityDest));
         }
     }
 
@@ -114,9 +114,10 @@ public class AirportSystem implements IAirportSystem {
     protected Route getRoute(String orig, String dest) throws RouteDoesntExistException {
         String origUpperCase = orig.toUpperCase();
         String destUpperCase = dest.toUpperCase();
-        Map<String, Route> routesByDestCity = connectionsByCityOrig.get(origUpperCase);
-        if (routesByDestCity == null || routesByDestCity.isEmpty())
+        LockObject<Map<String, Route>> routesByDestCityWithLock = connectionsByCityOrig.get(origUpperCase);
+        if (routesByDestCityWithLock == null || routesByDestCityWithLock.elem().isEmpty())
             throw new RouteDoesntExistException(orig, dest);
+        Map<String, Route> routesByDestCity = routesByDestCityWithLock.elem();
         Route route = routesByDestCity.get(destUpperCase);
         if (route == null)
             throw new RouteDoesntExistException(orig, dest);
@@ -133,9 +134,9 @@ public class AirportSystem implements IAirportSystem {
     private boolean validRoute(String orig, String dest) {
         String origUpperCase = orig.toUpperCase();
         String destUpperCase = dest.toUpperCase();
-        Map<String, Route> routes = connectionsByCityOrig.get(origUpperCase);
-        if (routes != null) {
-            return routes.containsKey(destUpperCase);
+        LockObject<Map<String, Route>> routesWithLock = connectionsByCityOrig.get(origUpperCase);
+        if (routesWithLock != null) {
+            return routesWithLock.elem().containsKey(destUpperCase);
         }
         return false;
     }
@@ -192,9 +193,10 @@ public class AirportSystem implements IAirportSystem {
      */
     private Flight getValidFlight(LocalDate date, Route route)
             throws FlightDoesntExistYetException {
-        Map<Route, Flight> flightsByRoute = this.flightsByDate.get(date);
-        if (flightsByRoute == null)
+        LockObject<Map<Route, Flight>> flightsByRouteWithLock = this.flightsByDate.get(date);
+        if (flightsByRouteWithLock == null)
             throw new FlightDoesntExistYetException();
+        Map<Route, Flight> flightsByRoute = flightsByRouteWithLock.elem();
         Flight flight = flightsByRoute.get(route);
         if (flight == null)
             throw new FlightDoesntExistYetException();
@@ -268,13 +270,15 @@ public class AirportSystem implements IAirportSystem {
     private Flight addFlight(Route route, LocalDate date) {
         Flight flight = new Flight(route, date);
         flightsById.putIfAbsent(flight.id, flight);
-        Map<Route, Flight> flights = flightsByDate.get(date);
-        if (flights == null) {
-            flights = new HashMap<>();
-            flights.put(route, flight);
-            flightsByDate.put(date, flights);
-        } else
-            flights.put(route, flight);
+        LockObject<Map<Route, Flight>> flightsWithLock = flightsByDate.get(date);
+        if (flightsWithLock == null) {
+            flightsWithLock = new LockObject<>(new HashMap<>());
+            flightsWithLock.elem().put(route, flight);
+            flightsByDate.put(date, flightsWithLock);
+        } else {
+            flightsWithLock.elem().put(route, flight);
+            //flights.put(route, flightsWithLock.elem().put(flight));
+        }
         return flight;
     }
 
@@ -372,7 +376,14 @@ public class AirportSystem implements IAirportSystem {
             throw new DayAlreadyCanceledException(day);
         this.canceledDays.add(day);
         Set<Reservation> canceledReservations = new HashSet<>();
-        Map<Route, Flight> flightsOneDay = this.flightsByDate.remove(day);
+        //lock flighys by date
+        LockObject<Map<Route, Flight>> flightsOneDayWithLock = this.flightsByDate.remove(day);
+        if (flightsOneDayWithLock == null)
+            return new HashSet<>();
+        //look ao LockObject
+        // unlock do flights by date
+
+        Map<Route, Flight> flightsOneDay = flightsOneDayWithLock.elem();
         if (flightsOneDay == null || flightsOneDay.isEmpty())
             return new HashSet<>();
         List<Flight> flights = new ArrayList<>(flightsOneDay.values());
@@ -404,7 +415,12 @@ public class AirportSystem implements IAirportSystem {
     public List<Route> getRoutes() {
         return this.connectionsByCityOrig.values()
                 .stream()
-                .flatMap(e -> e.values().stream())
+                .flatMap(e -> {
+                    //Dar lock do elems
+                    var elems = e.elem().values();
+                    return elems.stream();
+                    //dar unlock do elems
+                })
                 .collect(Collectors.toList());
     }
 

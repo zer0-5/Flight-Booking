@@ -64,12 +64,12 @@ class AirportSystemTest {
     void setUp() {
         airportSystem = new AirportSystem();
         date = LocalDate.now();
-        System.out.println("---- TEST ----");
+        //System.out.println("---- TEST ----");
     }
 
     @org.junit.jupiter.api.AfterEach
     void tearDown() {
-        System.out.println("---------------");
+        //System.out.println("---------------");
     }
 
     /**
@@ -98,7 +98,7 @@ class AirportSystemTest {
             airportSystem.addRoute(orig, dest, capacity);
         });
     }
-/*
+
 
     //--------------------- Get Routes ----------------------
 
@@ -116,7 +116,7 @@ class AirportSystemTest {
         Assertions.assertThrows(RouteDoesntExistException.class, () ->
                 airportSystem.addRoute(orig, dest, capacity));
     }
-*/
+
     /**
      * Test  to verify if the route stores with case insensivity.
      * We create one root, and test if we can get roots with names that have other "camel cases" in name.
@@ -126,14 +126,14 @@ class AirportSystemTest {
     @CsvSource({"Lisbon,London,30", "London,Paris,1", "Lisbon,Paris,23"})
     void getRoute(String orig, String dest, int capacity) {
         Assertions.assertDoesNotThrow(() -> {
-            System.out.println("Add route: " + orig + "-> " + dest + " (" + capacity + ")");
+            //System.out.println("Add route: " + orig + "-> " + dest + " (" + capacity + ")");
             airportSystem.addRoute(orig, dest, capacity);
-            System.out.println("GET route: " + orig + "-> " + dest);
+            //System.out.println("GET route: " + orig + "-> " + dest);
             List<Route> routes_tested = new ArrayList<>();
             routes_tested.add(airportSystem.getRoute(orig, dest));
-            System.out.println("GET route: " + orig.toUpperCase() + "-> " + dest.toLowerCase());
+            //System.out.println("GET route: " + orig.toUpperCase() + "-> " + dest.toLowerCase());
             routes_tested.add(airportSystem.getRoute(orig.toUpperCase(), dest.toLowerCase()));
-            System.out.println("GET route: " + orig.toLowerCase() + "-> " + dest.toUpperCase());
+            //System.out.println("GET route: " + orig.toLowerCase() + "-> " + dest.toUpperCase());
             routes_tested.add(airportSystem.getRoute(orig.toLowerCase(), dest.toUpperCase()));
             for (Route tested : routes_tested) {
                 assert tested.origin.equals(orig);
@@ -142,13 +142,13 @@ class AirportSystemTest {
             }
         });
     }
-/*
+
     @ParameterizedTest
     @CsvSource({"Lisbon,Paris", "Paris,Lisbon"})
     public void getRouteDoesntExistException(String orig, String dest) {
         addRoute("Lisbon", "London", 30);
         Assertions.assertThrows(RouteDoesntExistException.class, () -> {
-            System.out.println("GET route: " + orig + "-> " + dest);
+            //System.out.println("GET route: " + orig + "-> " + dest);
             airportSystem.getRoute(orig, dest);
         });
     }
@@ -195,7 +195,7 @@ class AirportSystemTest {
             airportSystem.reserveFlight(username, cities1, date, date.plusDays(1));
         });
     }
-*/
+
     /**
      * Test to check if the pre-reservations are removed if the full flight isn't possible.
      * Example of the tested situation:
@@ -218,7 +218,7 @@ class AirportSystemTest {
             airportSystem.reserveFlight(username, cities2, date, date);
             fail();
         } catch (BookingFlightsNotPossibleException ignored) {
-            System.out.println("One flight isn't possible, the pre-reservations should be removed.");
+            //System.out.println("One flight isn't possible, the pre-reservations should be removed.");
         } catch (RouteDoesntExistException ignored) {
             fail();
         }
@@ -364,10 +364,9 @@ class AirportSystemTest {
         List<String> cities = new ArrayList<>(Arrays.asList("Paris", "Lisbon"));
         String client = "hello2";
         registerAdmin(client, client);
-        System.out.println("O erro está aqui <------------------");
         Assertions.assertThrows(ReservationNotFoundException.class, () -> {
             UUID reservation = airportSystem.reserveFlight(client, cities, date, date);
-            System.out.println("Quero cancelar: " + reservation);
+            //System.out.println("Quero cancelar: " + reservation);
             airportSystem.cancelDay(date);
             airportSystem.cancelReservation(client, reservation);
         });
@@ -408,7 +407,7 @@ class AirportSystemTest {
     @ParameterizedTest
     @MethodSource("usernamesAndPasswords")
     void registerClient(String username, String password) {
-        System.out.println("Register client -> " + username);
+        //System.out.println("Register client -> " + username);
         Assertions.assertDoesNotThrow(() -> {
             airportSystem.registerClient(username, password);
         });
@@ -417,7 +416,7 @@ class AirportSystemTest {
     @ParameterizedTest
     @MethodSource("usernamesAndPasswords")
     void registerAdmin(String username, String password) {
-        System.out.println("Register admin -> " + username);
+        //System.out.println("Register admin -> " + username);
         Assertions.assertDoesNotThrow(() -> {
             airportSystem.registerAdmin(username, password);
         });
@@ -426,10 +425,10 @@ class AirportSystemTest {
     @ParameterizedTest
     @MethodSource("usernamesAndPasswords")
     void registerClient_UsernameAlreadyExist(String username, String password) {
-        System.out.println("Register client -> " + username);
+        //System.out.println("Register client -> " + username);
         registerClient(username, password);
         Assertions.assertThrows(UsernameAlreadyExistsException.class, () -> {
-            System.out.println("TRY: Register client -> " + username);
+            //System.out.println("TRY: Register client -> " + username);
             airportSystem.registerClient(username, password);
         });
     }
@@ -437,10 +436,10 @@ class AirportSystemTest {
     @ParameterizedTest
     @MethodSource("usernamesAndPasswords")
     void registerAdmin_UsernameAlreadyExist(String username, String password) {
-        System.out.println("Register admin -> " + username);
+        //System.out.println("Register admin -> " + username);
         registerAdmin(username, password);
         Assertions.assertThrows(UsernameAlreadyExistsException.class, () -> {
-            System.out.println("TRY: Register admin -> " + username);
+            //System.out.println("TRY: Register admin -> " + username);
             airportSystem.registerAdmin(username, password);
         });
     }
@@ -473,12 +472,12 @@ class AirportSystemTest {
     void authenticate_UserNotFound(String username, String password) {
         registerClient(username, password);
         Assertions.assertThrows(UserNotFoundException.class, () -> {
-            System.out.println("TRY: Authenticate user -> " + username.toUpperCase());
+            //System.out.println("TRY: Authenticate user -> " + username.toUpperCase());
             airportSystem.authenticate(username.toUpperCase(), password);
         });
         registerAdmin(username.toUpperCase(), password);
         Assertions.assertThrows(UserNotFoundException.class, () -> {
-            System.out.println("TRY: Authenticate user -> " + username.toLowerCase());
+            //System.out.println("TRY: Authenticate user -> " + username.toLowerCase());
             airportSystem.authenticate(username.toLowerCase(), password);
         });
     }

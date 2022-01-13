@@ -39,12 +39,11 @@ public class Flight {
      */
     private final Set<Reservation> reservations;
 
-    private final ReadWriteLock rwReservation ;
-
+    //private final ReadWriteLock rwReservation ;
     // Get reservations
     private final Lock readLockReservation;
 
-    //Adicionar a reserva depois de ter sido bloqueado.
+    // Adicionar a reserva depois de ter sido bloqueado.
     private final Lock writeLockReservation;
 
 
@@ -59,7 +58,7 @@ public class Flight {
         this.route = route;
         this.date = date;
         this.reservations = new HashSet<>();
-        this.rwReservation = new ReentrantReadWriteLock();
+        ReentrantReadWriteLock rwReservation = new ReentrantReadWriteLock();
         this.readLockReservation = rwReservation.readLock();
         this.writeLockReservation = rwReservation.writeLock();
     }
@@ -120,18 +119,6 @@ public class Flight {
     public boolean seatAvailable() {
         // T
         return route.capacity > reservations.size();
-    }
-
-    // TODO
-    public void preReservationSeat() throws FullFlightException {
-        if (seatAvailable())
-            return;
-        else
-            throw new FullFlightException();
-    }
-
-    public void cancelSeat() {
-        //TODO
     }
 
     public void cancelFlight() {

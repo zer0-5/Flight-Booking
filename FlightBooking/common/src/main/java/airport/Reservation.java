@@ -28,6 +28,7 @@ public class Reservation {
      */
     private final Set<Flight> flights;
 
+    // TODO MUDAR PRA READ AND WRITE
     private final ReentrantLock lockFlights;
 
     /**
@@ -66,7 +67,7 @@ public class Reservation {
      * @param user User
      * @return true if are the same user
      */
-    public boolean checksUser(User user) {
-        return client.equals(user);
-    }
+    //public boolean checksUser(User user) {
+    //    return client.equals(user);
+    //}
 }
