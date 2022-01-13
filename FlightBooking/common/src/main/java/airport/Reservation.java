@@ -25,7 +25,7 @@ public class Reservation {
      * Flights with the connections of the reservation.
      * E.g. Lisbon -> Tokyo -> London
      */
-    private final Set<UUID> flightIds;
+    private final Set<Flight> flights;
 
     /**
      * Constructor
@@ -33,10 +33,10 @@ public class Reservation {
      * @param client     Client.
      * @param flightsIds a set of flight's id.
      */
-    public Reservation(User client, Set<UUID> flightsIds) {
+    public Reservation(User client, Set<Flight> flightsIds) {
         this.id = UUID.randomUUID();
         this.client = client;
-        this.flightIds = flightsIds;
+        this.flights = flightsIds;
     }
 
     /**
@@ -44,10 +44,21 @@ public class Reservation {
      *
      * @return Flight ids
      */
-    public Set<UUID> getFlightIds() {
-        return new HashSet<>(flightIds);
+    public Set<Flight> getFlights() {
+        return new HashSet<>(flights);
     }
 
+    /**
+     * Cancel the reservation on all flights involved in the given reservation
+     *
+     */
+    public void cancelReservation() {
+        for (Flight flight : flights) {
+            if (flight != null)
+                flight.removeReservation(this.id);
+        }
+    }
+    
     /**
      * Checks if the given user made the reservation
      *

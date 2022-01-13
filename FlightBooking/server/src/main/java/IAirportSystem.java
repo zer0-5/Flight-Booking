@@ -28,6 +28,7 @@ public interface IAirportSystem {
      * @param day the day.
      * @return all canceled @see airport.Reservation .
      */
+    //USERNAME -> garantir q é admin
     Set<Reservation> cancelDay(LocalDate day) throws DayAlreadyCanceledException;
 
     /**
