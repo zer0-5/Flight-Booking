@@ -58,7 +58,7 @@ public class Reservation {
                 flight.removeReservation(this.id);
         }
     }
-    
+
     /**
      * Checks if the given user made the reservation
      *
