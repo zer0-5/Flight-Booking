@@ -94,6 +94,7 @@ class AirportSystemTest {
     @ParameterizedTest
     @CsvSource({"Lisbon,London,30", "London,Paris,1", "Lisbon,Paris,23"})
     public void addRoute(String orig, String dest, int capacity) {
+        //System.out.println("Add route");
         Assertions.assertDoesNotThrow(() -> {
             airportSystem.addRoute(orig, dest, capacity);
         });
@@ -105,6 +106,7 @@ class AirportSystemTest {
     @ParameterizedTest
     @CsvSource({"Lisbon,London,30", "Lisbon,London,23", "LiSBon,London,30", "Lisbon,LOndoN,30", "LISbon,lonDOn,21"})
     void routeAlreadyExistException(String orig, String dest, int capacity) {
+        //System.out.println("rota existe");
         addRoute("Lisbon", "London", 30);
         Assertions.assertThrows(RouteAlreadyExistsException.class, () ->
                 airportSystem.addRoute(orig, dest, capacity));
@@ -113,6 +115,7 @@ class AirportSystemTest {
     @ParameterizedTest
     @CsvSource({"Lisbon,Lisbon,30"})
     void routeSameOriginDestinationException(String orig, String dest, int capacity) {
+        //System.out.println("rota igual");
         Assertions.assertThrows(RouteDoesntExistException.class, () ->
                 airportSystem.addRoute(orig, dest, capacity));
     }
@@ -125,6 +128,7 @@ class AirportSystemTest {
     @ParameterizedTest
     @CsvSource({"Lisbon,London,30", "London,Paris,1", "Lisbon,Paris,23"})
     void getRoute(String orig, String dest, int capacity) {
+        //System.out.println("getRoute");
         Assertions.assertDoesNotThrow(() -> {
             //System.out.println("Add route: " + orig + "-> " + dest + " (" + capacity + ")");
             airportSystem.addRoute(orig, dest, capacity);
@@ -146,6 +150,7 @@ class AirportSystemTest {
     @ParameterizedTest
     @CsvSource({"Lisbon,Paris", "Paris,Lisbon"})
     public void getRouteDoesntExistException(String orig, String dest) {
+        //System.out.println("rota nao existe");
         addRoute("Lisbon", "London", 30);
         Assertions.assertThrows(RouteDoesntExistException.class, () -> {
             //System.out.println("GET route: " + orig + "-> " + dest);
@@ -156,6 +161,7 @@ class AirportSystemTest {
     @ParameterizedTest
     @CsvSource({"Lisbon,Lisbon,1", "LISbon,Lisbon,2", "LISbon,LisBon,10"})
     public void invalidRouteException(String orig, String dest, int capacity) {
+        //System.out.println("HUMM");
         Assertions.assertThrows(RouteDoesntExistException.class, () ->
                 airportSystem.addRoute(orig, dest, capacity));
     }
@@ -163,6 +169,7 @@ class AirportSystemTest {
     @ParameterizedTest
     @ValueSource(ints = {1, 1000, 10000})
     void getRoutes(int N) {
+        //System.out.println("Aqui");
         for (int i = 0; i < N; i++)
             addRoute(String.valueOf(i), "London", i);
 
@@ -176,6 +183,7 @@ class AirportSystemTest {
     //---------------------- Reservation Flights ----------------
     @org.junit.jupiter.api.Test
     void reserveFlight() {
+        //System.out.println("reservar voo");
         initUser();
         addRoute("Paris", "Lisbon", 2);
         List<String> cities1 = new ArrayList<>(Arrays.asList("Paris", "Lisbon"));
@@ -187,6 +195,7 @@ class AirportSystemTest {
 
     @org.junit.jupiter.api.Test
     void reserveFlight_DifferentDays() {
+        //System.out.println("diff days reserva");
         initUser();
         addRoute("Paris", "Lisbon", 1);
         List<String> cities1 = new ArrayList<>(Arrays.asList("Paris", "Lisbon"));
@@ -219,12 +228,12 @@ class AirportSystemTest {
             fail();
         } catch (BookingFlightsNotPossibleException ignored) {
             //System.out.println("One flight isn't possible, the pre-reservations should be removed.");
-        } catch (RouteDoesntExistException ignored) {
+        } catch (RouteDoesntExistException | UserNotFoundException ignored) {
             fail();
         }
         try {
             airportSystem.reserveFlight(username, cities3, date, date);
-        } catch (RouteDoesntExistException | BookingFlightsNotPossibleException e) {
+        } catch (RouteDoesntExistException | BookingFlightsNotPossibleException | UserNotFoundException e) {
             fail();
         }
     }

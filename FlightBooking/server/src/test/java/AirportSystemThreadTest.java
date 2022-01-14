@@ -5,7 +5,8 @@ import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
-import java.util.stream.Stream;
+import java.util.UUID;
+import java.util.concurrent.locks.ReentrantLock;
 
 
 class AirportSystemThreadTest {
@@ -45,14 +46,29 @@ class AirportSystemThreadTest {
     private void initRoutes_LondonParisLisbon()  {
         //            System.out.println(airportSystem.getReservation(reservation).toString());
         try {
-            airportSystem.addRoute("London", "Paris", 3);
+            airportSystem.addRoute("London", "Paris", 2);
             airportSystem.addRoute("Paris", "Lisbon", 3);
         } catch (RouteAlreadyExistsException e) {
             e.printStackTrace();
         } catch (RouteDoesntExistException e) {
             e.printStackTrace();
         }
+    }
 
+    /**
+     * Private method to initialize airport system.
+     * Capacity of each flight is 1.
+     */
+    private void initRoutes_LondonParisLisbon(int routeCapacity)  {
+        //            System.out.println(airportSystem.getReservation(reservation).toString());
+        try {
+            airportSystem.addRoute("London", "Paris", routeCapacity);
+            airportSystem.addRoute("Paris", "Lisbon", routeCapacity);
+        } catch (RouteAlreadyExistsException e) {
+            e.printStackTrace();
+        } catch (RouteDoesntExistException e) {
+            e.printStackTrace();
+        }
     }
 
     private void initUser() {
@@ -72,10 +88,16 @@ class AirportSystemThreadTest {
     // -------------------- Add Route -------------------
     @org.junit.jupiter.api.Test
     void testMultipleReservations(){
-        initUserAndRoutes_LondonParisLisbon();
-        Thread[] threads = new Thread[5];
-        for (int i = 0; i < 5; i++){
-            threads[i] = new Thread(new makeReservation(airportSystem));
+        int N = 20;
+        int numberDays = 3;
+        int routeCapacity = 2;
+        initUser();
+        initRoutes_LondonParisLisbon(2);
+        Thread[] threads = new Thread[N];
+        makeReservation makeReservation = new makeReservation(airportSystem, numberDays);
+
+        for (int i = 0; i < N; i++){
+            threads[i] = new Thread(makeReservation);
         }
         for (Thread t : threads){
             t.start();
@@ -88,29 +110,40 @@ class AirportSystemThreadTest {
         catch (InterruptedException e) {
             e.printStackTrace();
         }
+        assert makeReservation.reservationSucceed == routeCapacity * numberDays;
     }
-
 
     private class makeReservation implements Runnable{
         private AirportSystem airportSystem;
 
-        public makeReservation(AirportSystem airportSystem) {
+        protected int reservationSucceed;
+        protected int numberDays;
+        private ReentrantLock lock;
+
+        public makeReservation(AirportSystem airportSystem, int numberDays) {
             this.airportSystem = airportSystem;
+            this.reservationSucceed = 0;
+            this.numberDays = numberDays;
+            lock = new ReentrantLock();
+        }
+
+        public void success() {
+            try {
+                lock.lock(); reservationSucceed++;
+            } finally {
+                lock.unlock();
+            }
         }
 
         public void run() {
-            System.out.println("Uma thread passou aqui");
+            System.out.println( Thread.currentThread().getName() + " | Tentativa de reserva");
             List<String> cities1 = new ArrayList<>(Arrays.asList("Paris", "Lisbon"));
             try {
-
-                airportSystem.reserveFlight("username", cities1, date, date);
-                airportSystem.reserveFlight("username", cities1, date, date);
-            } catch (BookingFlightsNotPossibleException e) {
-                e.printStackTrace();
-            } catch (RouteDoesntExistException e) {
-                e.printStackTrace();
+                UUID id = airportSystem.reserveFlight(username, cities1, date, date.plusDays(numberDays-1));
+                success();
+                System.out.println(Thread.currentThread().getName() + " | ReservaID : "+ id);
+            } catch (Exception e) {
             }
-
         }
     }
 
