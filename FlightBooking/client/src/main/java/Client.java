@@ -1,22 +1,22 @@
 import airport.Reservation;
 import airport.Route;
 import connection.TaggedConnection;
-import exceptions.AlreadyLoggedInException;
 import exceptions.NotLoggedInException;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import request.RequestType;
 
 import java.io.IOException;
 import java.net.Socket;
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
+import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Scanner;
 import java.util.stream.Collectors;
 
 import static connection.TaggedConnection.Frame;
+import static java.lang.System.out;
 import static request.RequestType.*;
 
 public class Client implements Runnable {
@@ -39,7 +39,7 @@ public class Client implements Runnable {
         try {
             boolean quit = false;
             while (!quit) {
-                System.out.print(getMenu());
+                out.print(getMenu());
                 int option = Integer.parseInt(in.nextLine());
                 switch (getRequestType(option)) {
                     case REGISTER -> register();
@@ -56,12 +56,14 @@ public class Client implements Runnable {
                     case RESERVE -> reserve();
                     case CANCEL_RESERVATION -> cancelReservation();
                 }
-                System.out.println();
+                out.println();
             }
 
             taggedConnection.close();
+        } catch (NotLoggedInException e) {
+            out.println(e.getMessage());
         } catch (Exception e) {
-            System.out.println(e.getMessage());
+            e.printStackTrace();
         }
     }
 
@@ -74,9 +76,9 @@ public class Client implements Runnable {
      * Then, it waits for a response, and handles it.
      */
     private void login() throws IOException {
-        System.out.println("Insert username: ");
+        out.println("Insert username: ");
         String username = in.nextLine();
-        System.out.println("Insert password: ");
+        out.println("Insert password: ");
         String password = in.nextLine();
 
         List<byte[]> args = new ArrayList<>();
@@ -89,7 +91,7 @@ public class Client implements Runnable {
 
         if (checkError(response)) printError(response);
         else {
-            System.out.println("Logged in!");
+            out.println("Logged in!");
             logged_in = true;
         }
     }
@@ -108,8 +110,8 @@ public class Client implements Runnable {
 
         if (checkError(response)) printError(response);
         else {
-            System.out.println("Cancel reservation with success!");
-            System.out.println(Reservation.deserialize(response.data().get(0)));
+            out.println("Cancel reservation with success!");
+            out.println(Reservation.deserialize(response.data().get(0)));
         }
     }
 
@@ -117,16 +119,33 @@ public class Client implements Runnable {
         if (!logged_in) throw new NotLoggedInException();
 
         List<byte[]> list = new ArrayList<>();
+
+        out.print("Insert the number of the cities: "); // TODO: Melhorar a mensagem disto
+        int num = Integer.parseInt(in.nextLine());
+
+        for (int i = 0; i < num; i++) {
+            out.print("Please insert the next city: ");
+            String city = in.nextLine();
+            list.add(city.getBytes(StandardCharsets.UTF_8));
+        }
+
+        out.print("Insert the start date with the following format \"2007-12-03\": ");
+        LocalDate start = LocalDate.parse(in.nextLine());
+        list.add(start.toString().getBytes(StandardCharsets.UTF_8));
+
+        out.print("Insert the end date with the following format \"2007-12-03\": ");
+        LocalDate end = LocalDate.parse(in.nextLine());
+        list.add(end.toString().getBytes(StandardCharsets.UTF_8));
+
         taggedConnection.send(RESERVE.ordinal(), list);
 
         Frame response = taggedConnection.receive();
 
         if (checkError(response)) printError(response);
         else {
-            System.out.println("Reserve with success!");
-            System.out.println(Reservation.deserialize(response.data().get(0)));
+            out.println("\nReserve with success!");
+            out.println("Reservation id: " + new String(response.data().get(0), StandardCharsets.UTF_8));
         }
-        // TODO:
     }
 
     private void getRoutes() throws NotLoggedInException, IOException {
@@ -140,7 +159,7 @@ public class Client implements Runnable {
         if (checkError(response)) printError(response);
         else {
             logger.info("Get routes with success!");
-            response.data().stream().map(Route::deserialize).forEach(System.out::println);
+            response.data().stream().map(Route::deserialize).forEach(out::println);
         }
         // TODO:
     }
@@ -148,52 +167,51 @@ public class Client implements Runnable {
     private void insertRoute() throws IOException, NotLoggedInException {
         if (!logged_in) throw new NotLoggedInException();
 
-        System.out.println("Insert origin route: ");
+        out.println("Insert origin route: ");
         String origin = in.nextLine();
 
-        System.out.println("Insert destiny route: ");
+        out.println("Insert destiny route: ");
         String destiny = in.nextLine();
 
-        System.out.println("Insert capacity of the route: ");
+        out.println("Insert capacity of the route: ");
         int capacity = Integer.parseInt(in.nextLine());
 
         List<byte[]> list = new ArrayList<>();
+
         list.add(origin.getBytes(StandardCharsets.UTF_8));
         list.add(destiny.getBytes(StandardCharsets.UTF_8));
         list.add(ByteBuffer.allocate(Integer.BYTES).putInt(capacity).array());
+
         taggedConnection.send(INSERT_ROUTE.ordinal(), list);
 
         Frame response = taggedConnection.receive();
 
         if (checkError(response)) printError(response);
-        else System.out.println("Route successfully inserted!");
+        else out.println("Route successfully inserted!");
     }
 
-    private void cancelDay() throws IOException {
-        System.out.println("Insert username: ");
-        String username = in.nextLine();
-
-        System.out.println("Insert password: ");
-        String password = in.nextLine();
-
+    private void cancelDay() throws IOException, NotLoggedInException {
+        if (!logged_in) throw new NotLoggedInException();
         List<byte[]> list = new ArrayList<>();
-        list.add(username.getBytes(StandardCharsets.UTF_8));
-        list.add(password.getBytes(StandardCharsets.UTF_8));
 
-        taggedConnection.send(REGISTER.ordinal(), list);
+        out.print("Insert the end date with the following format \"2007-12-03\": ");
+        LocalDate day = LocalDate.parse(in.nextLine());
+        list.add(day.toString().getBytes(StandardCharsets.UTF_8));
+
+        taggedConnection.send(CANCEL_DAY.ordinal(), list);
 
         Frame response = taggedConnection.receive();
 
         if (checkError(response)) printError(response);
-        else System.out.println("Account successfully registered!");
+        else out.println("Day successfully cancelled!");
         // TODO:
     }
 
     private void register() throws IOException {
-        System.out.println("Insert username: ");
+        out.println("Insert username: ");
         String username = in.nextLine();
 
-        System.out.println("Insert password: ");
+        out.println("Insert password: ");
         String password = in.nextLine();
 
         List<byte[]> list = new ArrayList<>();
@@ -205,7 +223,7 @@ public class Client implements Runnable {
         Frame response = taggedConnection.receive();
 
         if (checkError(response)) printError(response);
-        else System.out.println("Account successfully registered!");
+        else out.println("Account successfully registered!");
     }
 
     private boolean checkError(Frame frame) {
@@ -213,11 +231,11 @@ public class Client implements Runnable {
     }
 
     private void printError(Frame frame) {
-        System.out.println("ERROR!");
+        out.println("ERROR!");
         for (int i = 1; i < frame.data().size(); i++) {
-            System.out.println(new String(frame.data().get(i)));
+            out.println(new String(frame.data().get(i)));
         }
-        System.out.println("Error with the request: " + frame.data().stream().map(String::new).collect(Collectors.joining(" ")));
+        out.println("Error with the request: " + frame.data().stream().map(String::new).collect(Collectors.joining(" ")));
     }
 
 }

@@ -1,4 +1,5 @@
-import java.util.ArrayList;
+package system;
+
 import java.util.LinkedList;
 import java.util.List;
 
@@ -30,7 +31,7 @@ public class PossiblePath {
     @Override
     public String toString() {
         if (isDestiny) return " [Destination " + thisCity + "] ";
-        StringBuilder res = new StringBuilder( "PossiblePath{ here: " + thisCity );
+        StringBuilder res = new StringBuilder( "system.PossiblePath{ here: " + thisCity );
         for (PossiblePath connection : connections){
             res.append("\n  {" + connection.toString() + "}");
         }

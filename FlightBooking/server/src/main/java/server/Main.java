@@ -1,10 +1,7 @@
 package server;
 
 
-import exceptions.BookingFlightsNotPossibleException;
-import exceptions.RouteAlreadyExistsException;
-import exceptions.RouteDoesntExistException;
-import exceptions.UsernameAlreadyExistsException;
+import exceptions.*;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import system.AirportSystem;
@@ -26,7 +23,7 @@ public class Main {
     @SuppressWarnings({"CanBeFinal", "FieldMayBeFinal", "FieldCanBeLocal"})
     private static boolean running = true;
 
-    private static IAirportSystem initState() throws UsernameAlreadyExistsException, RouteDoesntExistException, RouteAlreadyExistsException, BookingFlightsNotPossibleException {
+    private static IAirportSystem initState() throws UsernameAlreadyExistsException, RouteDoesntExistException, RouteAlreadyExistsException, BookingFlightsNotPossibleException, UserNotFoundException {
         IAirportSystem iAirportSystem = new AirportSystem();
 
         iAirportSystem.registerAdmin("admin", "admin");
@@ -46,7 +43,7 @@ public class Main {
         return iAirportSystem;
     }
 
-    public static void main(String[] args) throws IOException, UsernameAlreadyExistsException, RouteDoesntExistException, RouteAlreadyExistsException, BookingFlightsNotPossibleException {
+    public static void main(String[] args) throws IOException, UsernameAlreadyExistsException, RouteDoesntExistException, RouteAlreadyExistsException, BookingFlightsNotPossibleException, UserNotFoundException {
         IAirportSystem iAirportSystem = initState();
 
         try (ServerSocket serverSocket = new ServerSocket(PORT)) {

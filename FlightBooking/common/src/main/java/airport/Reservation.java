@@ -4,10 +4,7 @@ import users.User;
 
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
-import java.util.HashSet;
-import java.util.Iterator;
-import java.util.Set;
-import java.util.UUID;
+import java.util.*;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
@@ -34,6 +31,7 @@ public class Reservation {
      */
     private final Set<Flight> flights;
 
+    // TODO: Não é preciso ReadWrite lock aqui!!!
     private final Lock readLockFlights;
     private final Lock writeLockFlights;
 
@@ -52,6 +50,22 @@ public class Reservation {
         this.writeLockFlights = rwFlights.writeLock();
     }
 
+    public Reservation(UUID id, User client, Set<Flight> flights) {
+        this.id = id;
+        this.client = client;
+        this.flights = flights;
+        ReentrantReadWriteLock rwFlights = new ReentrantReadWriteLock();
+        this.readLockFlights = rwFlights.readLock();
+        this.writeLockFlights = rwFlights.writeLock();
+    }
+
+    public Reservation(UUID uuid) {
+        this.id = uuid;
+        this.client = null;
+        this.flights = null;
+        this.readLockFlights = null;
+        this.writeLockFlights = null;
+    }
 
     /**
      * Cancel the reservation on all flights involved in the given reservation
@@ -96,7 +110,6 @@ public class Reservation {
 
         bb.putInt(flights.size());
         for (byte[] flight : flights) {
-            bb.putInt(flight.length); // Flight size
             bb.put(flight); // Flight
         }
 
@@ -110,12 +123,24 @@ public class Reservation {
         byte[] idB = new byte[bb.getInt()];
         bb.get(idB);
 
+        var client = User.deserialize(bb);
         var arr = bb.array();
-        var client = User.deserialize(arr);
 
-        Set<Flight> flights = null;
-
+        int size = bb.getInt();
+        Set<Flight> flights = new HashSet<>(size);
+        for (int i = 0; i < size; i++) {
+            Flight flight = Flight.deserialize(bb);
+            flights.add(flight);
+        }
         return new Reservation(UUID.fromString(new String(idB, StandardCharsets.UTF_8)), client, flights);
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        Reservation that = (Reservation) o;
+        return id.equals(that.id) && client.equals(that.client) && flights.equals(that.flights);
     }
 
     @Override
