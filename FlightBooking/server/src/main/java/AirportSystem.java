@@ -660,4 +660,58 @@ public class AirportSystem implements IAirportSystem {
     public Reservation getReservation(UUID resID){
         return this.reservationsById.get(resID);
     }
+
+    public PossiblePath getPathsBetween(String from, String dest) throws RouteDoesntExistException {
+        if (destinationCitiesFrom(from.toUpperCase()).size() == 0) throw new RouteDoesntExistException();
+        return getPathsBetweenAux(from.toUpperCase(), dest.toUpperCase(), 4);
+    }
+
+    //Faltam locks
+    private Set<String> destinationCitiesFrom(String origin){
+
+        LockObject<Map<String, Route>> thisCity =connectionsByCityOrig.get(origin);
+        if (thisCity == null) return new TreeSet<>();
+        return thisCity.elem().keySet();
+    }
+
+    private PossiblePath getPathsBetweenAux(String from, String dest, int depth){
+        // No city was found from this city.
+        if (depth == 0)
+            return null;
+        // A connection was possible.
+        if (from.equals(dest))
+            return new PossiblePath(true, from);
+        Set<String> connectedCitiesFromHere = destinationCitiesFrom(from);
+        PossiblePath here = new PossiblePath(false, from);
+        for (String city : connectedCitiesFromHere){
+            PossiblePath res = getPathsBetweenAux(city, dest, depth-1);
+            if (res != null){
+                here.addPossiblePath(res);
+            }
+        }
+        if (here.numPossiblePaths() == 0)
+            return null;
+        return here;
+
+    }
+
+    public static void main(String[] args) throws RouteAlreadyExistsException, RouteDoesntExistException {
+        AirportSystem air = new AirportSystem();
+        air.addRoute("a", "b", 1);
+        air.addRoute("a", "c", 1);
+        air.addRoute("c", "dest", 1);
+        air.addRoute("b", "dest", 1);
+        air.addRoute("b", "d", 1);
+        air.addRoute("d", "dest", 1);
+        air.addRoute("a", "dest", 1);
+        air.addRoute("a", "d", 1);
+        air.addRoute("f", "o", 1);
+
+        System.out.println("Conexões:");
+        try {
+            System.out.println(air.getPathsBetween("a", "dest").toStringPretty(""));
+            System.out.println(air.getPathsBetween("dest", "dest2").toStringPretty(""));
+        }
+        catch (RouteDoesntExistException e){}
+    }
 }
