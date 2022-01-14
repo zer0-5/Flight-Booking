@@ -656,4 +656,8 @@ public class AirportSystem implements IAirportSystem {
             this.readLockUser.unlock();
         }
     }
+
+    public Reservation getReservation(UUID resID){
+        return this.reservationsById.get(resID);
+    }
 }

@@ -1,3 +1,4 @@
+import airport.Reservation;
 import exceptions.*;
 import org.junit.jupiter.api.*;
 
@@ -113,7 +114,7 @@ class AirportSystemThreadTest {
         assert makeReservation.reservationSucceed == routeCapacity * numberDays;
     }
 
-    private class makeReservation implements Runnable{
+    private class makeReservation implements Runnable {
         private AirportSystem airportSystem;
 
         protected int reservationSucceed;
@@ -129,23 +130,21 @@ class AirportSystemThreadTest {
 
         public void success() {
             try {
-                lock.lock(); reservationSucceed++;
+                lock.lock();
+                reservationSucceed++;
             } finally {
                 lock.unlock();
             }
         }
 
         public void run() {
-            System.out.println( Thread.currentThread().getName() + " | Tentativa de reserva");
             List<String> cities1 = new ArrayList<>(Arrays.asList("Paris", "Lisbon"));
             try {
-                UUID id = airportSystem.reserveFlight(username, cities1, date, date.plusDays(numberDays-1));
+                UUID id = airportSystem.reserveFlight(username, cities1, date, date.plusDays(numberDays - 1));
                 success();
-                System.out.println(Thread.currentThread().getName() + " | ReservaID : "+ id);
             } catch (Exception e) {
             }
         }
     }
-
-
 }
+
