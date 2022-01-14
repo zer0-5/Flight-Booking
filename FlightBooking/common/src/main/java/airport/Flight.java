@@ -128,7 +128,7 @@ public class Flight {
         try {
             writeLockReservation.lock();
             for (Reservation reservation : reservations) {
-                reservation.cancelReservation();
+                reservation.cancelReservation(id);
             }
         } finally {
             writeLockReservation.unlock();

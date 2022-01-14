@@ -519,7 +519,7 @@ public class AirportSystem implements IAirportSystem {
 
             flightsOneDayWithLock.writeLock();
         } finally {
-            this.writeLockFlightsByDate.lock();
+            this.writeLockFlightsByDate.unlock();
         }
         try {
             Map<Route, Flight> flightsOneDay = flightsOneDayWithLock.elem();
@@ -710,8 +710,10 @@ public class AirportSystem implements IAirportSystem {
         System.out.println("Conexões:");
         try {
             System.out.println(air.getPathsBetween("a", "dest").toStringPretty(""));
+            System.out.println(air.getPathsBetween("a", "dest"));
             System.out.println(air.getPathsBetween("dest", "dest2").toStringPretty(""));
         }
         catch (RouteDoesntExistException e){}
     }
+
 }

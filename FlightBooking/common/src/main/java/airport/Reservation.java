@@ -66,9 +66,25 @@ public class Reservation {
     }
 
     /**
+     * Used in cancelDay, to don't remove the same flight two times.
+     * Only remove the other flights from a reservation that is cancelled.
+     * @param id
+     */
+    public void cancelReservation(UUID id) {
+        try {
+            writeLockFlights.lock();
+            for (Flight flight : flights) {
+                if (flight != null && flight.id != id)
+                    flight.removeReservation(this);
+            }
+        } finally {
+            writeLockFlights.unlock();
+        }
+    }
+
+    /**
      * Checks if the given user made the reservation
      *
-     * @param user User
      * @return true if are the same user
      */
     //public boolean checksUser(User user) {
@@ -85,4 +101,6 @@ public class Reservation {
             res.append(flights.toString());
         return  res.toString();
     }
+
+
 }
