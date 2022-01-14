@@ -70,4 +70,15 @@ public class Reservation {
     //public boolean checksUser(User user) {
     //    return client.equals(user);
     //}
+
+    @Override
+    public String toString() {
+        StringBuilder res = new StringBuilder();
+        res.append("Reservation{" +
+                "client=" + client +
+                ", flights=");
+        for (Flight one : flights)
+            res.append(flights.toString());
+        return  res.toString();
+    }
 }

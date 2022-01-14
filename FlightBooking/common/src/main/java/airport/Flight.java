@@ -135,4 +135,13 @@ public class Flight {
         //writeLockReservation.tryLock();
         writeLockReservation.lock();
     }
+
+    @Override
+    public String toString() {
+        return "Flight{" +
+                "Day =" + this.date.toString() +
+                "\nroute from =" + route.origin +
+                "to =" + route.destination +
+                '}';
+    }
 }
