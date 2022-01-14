@@ -1,7 +1,10 @@
 package users;
 
+import airport.Reservation;
 import encryption.BCrypt;
 
+import java.nio.ByteBuffer;
+import java.nio.charset.StandardCharsets;
 import java.util.HashSet;
 import java.util.Set;
 import java.util.UUID;
@@ -83,5 +86,34 @@ public abstract class User {
         User user = (User) o;
         return username.equals(user.username) &&
                 password.equals(user.password);
+    }
+
+    public byte[] serialize() {
+        var username = this.username.getBytes(StandardCharsets.UTF_8);
+        // var reservations = this.reservations;
+        // TODO: Falta implementar aqui a serialização das reservations!
+        var password = this.password.getBytes(StandardCharsets.UTF_8);
+
+        ByteBuffer bb = ByteBuffer.allocate(Integer.BYTES + username.length + Integer.BYTES + password.length);
+        bb.putInt(username.length);
+        bb.put(username);
+        bb.putInt(password.length);
+        bb.put(password);
+
+        return bb.array();
+    }
+
+
+    public static User deserialize(byte[] bytes) {
+        ByteBuffer bb = ByteBuffer.wrap(bytes);
+
+        byte[] username = new byte[bb.getInt()];
+        bb.get(username);
+
+        byte[] password = new byte[bb.getInt()];
+        bb.get(password);
+
+        // TODO: Mudar isto para dar para o Admin tbm
+        return new Client(new String(username, StandardCharsets.UTF_8), new String(password, StandardCharsets.UTF_8));
     }
 }

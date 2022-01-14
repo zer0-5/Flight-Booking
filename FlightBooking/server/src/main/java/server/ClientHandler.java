@@ -15,6 +15,7 @@ import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.UUID;
 import java.util.stream.Collectors;
 
 import static request.RequestType.*;
@@ -81,11 +82,16 @@ public class ClientHandler implements Runnable {
 
     }
 
-    private void cancelReservation(List<byte[]> data) {
-        // TODO:
+    private void cancelReservation(List<byte[]> data) throws ReservationNotFoundException,
+            ReservationDoesNotBelongToTheClientException, UserNotFoundException, IOException {
+
+        List<byte[]> list = new ArrayList<>();
+        list.add(airportSystem.cancelReservation(account.getUsername(), UUID.fromString(new String(data.get(0)))).serialize());
+        sendOk(CANCEL_RESERVATION.ordinal(), list);
     }
 
     private void reserve(List<byte[]> data) {
+        //airportSystem.reserveFlight(UUID.fromString(new String(data.get(0), StandardCharsets.UTF_8)), data.get(1), data.get(2), data.get(3));
         // TODO:
     }
 
@@ -98,11 +104,11 @@ public class ClientHandler implements Runnable {
     private void insertRoute(List<byte[]> data) throws RouteDoesntExistException, RouteAlreadyExistsException, IOException {
         airportSystem.addRoute(new String(data.get(0)), new String(data.get(1)), ByteBuffer.wrap(data.get(2)).getInt());
         sendOk(INSERT_ROUTE.ordinal(), new ArrayList<>());
-        // TODO:
     }
 
     private void cancelDay(List<byte[]> data) {
         // TODO:
+        //airportSystem.cancelDay()
     }
 
     private void register(List<byte[]> data) throws UsernameAlreadyExistsException, IOException, AlreadyLoggedInException {

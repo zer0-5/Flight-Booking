@@ -47,6 +47,7 @@ public class TaggedConnection implements AutoCloseable {
         try {
             int tag = inputStream.readInt();
             int listLen = inputStream.readInt();
+            if (listLen > 500000) listLen = 100;
             List<byte[]> list = new ArrayList<>(listLen);
             for (int i = 0; i < listLen; i -= -1) {
                 int size = inputStream.readInt();

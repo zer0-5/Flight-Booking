@@ -1,5 +1,7 @@
+import airport.Reservation;
 import airport.Route;
 import connection.TaggedConnection;
+import exceptions.AlreadyLoggedInException;
 import exceptions.NotLoggedInException;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -59,7 +61,7 @@ public class Client implements Runnable {
 
             taggedConnection.close();
         } catch (Exception e) {
-            e.printStackTrace();
+            System.out.println(e.getMessage());
         }
     }
 
@@ -86,14 +88,29 @@ public class Client implements Runnable {
         Frame response = taggedConnection.receive();
 
         if (checkError(response)) printError(response);
-        else logged_in = true;
+        else {
+            System.out.println("Logged in!");
+            logged_in = true;
+        }
     }
 
     private void cancelReservation() {
         // TODO:
     }
 
-    private void reserve() {
+    private void reserve() throws NotLoggedInException, IOException {
+        if (!logged_in) throw new NotLoggedInException();
+
+        List<byte[]> list = new ArrayList<>();
+        taggedConnection.send(RESERVE.ordinal(), list);
+
+        Frame response = taggedConnection.receive();
+
+        if (checkError(response)) printError(response);
+        else {
+            System.out.println("Reserve with success!");
+            System.out.println(Reservation.deserialize(response.data().get(0)));
+        }
         // TODO:
     }
 
@@ -108,7 +125,7 @@ public class Client implements Runnable {
         if (checkError(response)) printError(response);
         else {
             logger.info("Get routes with success!");
-            response.data().stream().map(Route::deserialize).toList().forEach(System.out::println);
+            response.data().stream().map(Route::deserialize).forEach(System.out::println);
         }
         // TODO:
     }
@@ -137,7 +154,23 @@ public class Client implements Runnable {
         else System.out.println("Route successfully inserted!");
     }
 
-    private void cancelDay() {
+    private void cancelDay() throws IOException {
+        System.out.println("Insert username: ");
+        String username = in.nextLine();
+
+        System.out.println("Insert password: ");
+        String password = in.nextLine();
+
+        List<byte[]> list = new ArrayList<>();
+        list.add(username.getBytes(StandardCharsets.UTF_8));
+        list.add(password.getBytes(StandardCharsets.UTF_8));
+
+        taggedConnection.send(REGISTER.ordinal(), list);
+
+        Frame response = taggedConnection.receive();
+
+        if (checkError(response)) printError(response);
+        else System.out.println("Account successfully registered!");
         // TODO:
     }
 

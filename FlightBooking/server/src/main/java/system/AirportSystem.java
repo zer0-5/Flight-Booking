@@ -313,9 +313,9 @@ public class AirportSystem implements IAirportSystem {
      * @param reservation Reservation to cancel
      */
     private void cancelReservation(Reservation reservation) {
-        Set<UUID> flightIds = reservation.getFlightIds();
-        for (UUID id : flightIds) {
-            Flight flight = flightsById.get(id);
+        Set<Flight> flightIds = reservation.getFlights();
+        for (Flight flight : flightIds) {
+            //Flight flight = flightsById.get(id);
             if (flight != null)
                 flight.removeReservation(reservation.id);
         }
