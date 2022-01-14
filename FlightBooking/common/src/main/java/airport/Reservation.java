@@ -5,7 +5,9 @@ import users.User;
 import java.util.HashSet;
 import java.util.Set;
 import java.util.UUID;
+import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
+import java.util.concurrent.locks.ReentrantReadWriteLock;
 
 /**
  * Represents the reservation of one or multiple flights.
@@ -28,8 +30,8 @@ public class Reservation {
      */
     private final Set<Flight> flights;
 
-    // TODO MUDAR PRA READ AND WRITE
-    private final ReentrantLock lockFlights;
+    private final Lock readLockFlights;
+    private final Lock writeLockFlights;
 
     /**
      * Constructor
@@ -41,7 +43,9 @@ public class Reservation {
         this.id = UUID.randomUUID();
         this.client = client;
         this.flights = flightsIds;
-        this.lockFlights = new ReentrantLock();
+        ReentrantReadWriteLock rwFlights = new ReentrantReadWriteLock();
+        this.readLockFlights = rwFlights.readLock();
+        this.writeLockFlights = rwFlights.writeLock();
     }
 
 
@@ -51,13 +55,13 @@ public class Reservation {
      */
     public void cancelReservation() {
         try {
-            lockFlights.lock();
+            writeLockFlights.lock();
             for (Flight flight : flights) {
                 if (flight != null)
                     flight.removeReservation(this);
             }
         } finally {
-            lockFlights.unlock();
+            writeLockFlights.unlock();
         }
     }
 

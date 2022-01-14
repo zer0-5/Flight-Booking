@@ -7,7 +7,6 @@ import java.util.HashSet;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.locks.Lock;
-import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 
 /**
@@ -117,13 +116,22 @@ public class Flight {
      * @return true if there is a seat.
      */
     public boolean seatAvailable() {
-        // T
-        return route.capacity > reservations.size();
+        try {
+            readLockReservation.lock();
+            return route.capacity > reservations.size();
+        } finally {
+            readLockReservation.unlock();
+        }
     }
 
     public void cancelFlight() {
-        for (Reservation reservation : reservations) {
-            reservation.cancelReservation();
+        try {
+            writeLockReservation.lock();
+            for (Reservation reservation : reservations) {
+                reservation.cancelReservation();
+            }
+        } finally {
+            writeLockReservation.unlock();
         }
     }
 
@@ -132,7 +140,6 @@ public class Flight {
     }
 
     public void lock() {
-        //writeLockReservation.tryLock();
         writeLockReservation.lock();
     }
 

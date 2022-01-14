@@ -9,6 +9,8 @@ import users.User;
 
 import java.time.LocalDate;
 import java.util.*;
+import java.util.concurrent.locks.Lock;
+import java.util.concurrent.locks.ReentrantReadWriteLock;
 import java.util.stream.Collectors;
 
 public class AirportSystem implements IAirportSystem {
@@ -16,41 +18,48 @@ public class AirportSystem implements IAirportSystem {
     /**
      * Associates ID to the respective User
      */
-    // TODO lock Read / write
     private final Map<String, User> usersById;
+    private final Lock readLockUser;
+    private final Lock writeLockUser;
 
     /**
      * Associates each city, by name, with the flights that leave that city.
      */
-    // TODO lock Read / write
     private final Map<String, LockObject<Map<String, Route>>> connectionsByCityOrig;
+    private final Lock readLockConnections;
+    private final Lock writeLockConnections;
 
     /**
      * Associates each ID to the respective flight
      */
-    // TODO lock Read / write
     private final Map<UUID, Flight> flightsById;
+    // Por só um lock
+    private final Lock readLockFlights;
+    private final Lock writeLockFlights;
 
     /**
      * Associates each day to the flies that happen in that day.
      * If a connection exists, but the fly in that day doesn't, then the flight will be created.
      * We can only have one flight by connection in each day.
      */
-    // TODO lock Read / write
     private final Map<LocalDate, LockObject<Map<Route, Flight>>> flightsByDate;
+    private final Lock readLockFlightsByDate;
+    private final Lock writeLockFlightsByDate;
 
     /**
      * Days cancelled by the administrator.
      * This is used to avoid reservations in cancelled days.
      */
-    // TODO lock Read / write
     private final Set<LocalDate> canceledDays;
+    private final Lock readLockCanceledDays;
+    private final Lock writeLockCanceledDays;
 
     /**
      * Associates each reservation to his id.
      */
-    // TODO lock Read / write
     private final Map<UUID, Reservation> reservationsById;
+    private final Lock readLockReservations;
+    private final Lock writeLockReservations;
 
     /**
      * Constructor.
@@ -63,6 +72,25 @@ public class AirportSystem implements IAirportSystem {
         this.flightsByDate = new HashMap<>();
         this.canceledDays = new HashSet<>();
         this.reservationsById = new HashMap<>();
+
+        ReentrantReadWriteLock lockUser = new ReentrantReadWriteLock();
+        this.readLockUser = lockUser.readLock();
+        this.writeLockUser = lockUser.writeLock();
+        ReentrantReadWriteLock lockConnections = new ReentrantReadWriteLock();
+        this.readLockConnections = lockConnections.readLock();
+        this.writeLockConnections = lockConnections.readLock();
+        ReentrantReadWriteLock lockFlights = new ReentrantReadWriteLock();
+        this.readLockFlights = lockFlights.readLock();
+        this.writeLockFlights = lockFlights.writeLock();
+        ReentrantReadWriteLock lockFlightsByDate = new ReentrantReadWriteLock();
+        this.readLockFlightsByDate = lockFlightsByDate.readLock();
+        this.writeLockFlightsByDate = lockFlightsByDate.writeLock();
+        ReentrantReadWriteLock lockCanceledDays = new ReentrantReadWriteLock();
+        this.readLockCanceledDays = lockCanceledDays.readLock();
+        this.writeLockCanceledDays = lockCanceledDays.readLock();
+        ReentrantReadWriteLock lockReservations = new ReentrantReadWriteLock();
+        this.readLockReservations = lockReservations.readLock();
+        this.writeLockReservations = lockReservations.writeLock();
     }
 
     /**
@@ -72,7 +100,21 @@ public class AirportSystem implements IAirportSystem {
      * @return true if the given date is canceled.
      */
     private boolean invalidDate(LocalDate dateToSearch) {
-        return canceledDays.contains(dateToSearch);
+        try {
+            this.readLockCanceledDays.lock();
+            return canceledDays.contains(dateToSearch);
+        } finally {
+            this.readLockCanceledDays.unlock();
+        }
+    }
+
+    private User getUserById(String username) {
+        try {
+            this.readLockUser.lock();
+            return this.usersById.get(username);
+        } finally {
+            this.readLockUser.unlock();
+        }
     }
 
     /**
@@ -92,15 +134,26 @@ public class AirportSystem implements IAirportSystem {
             throw new RouteDoesntExistException(orig, dest);
         }
         Route newRoute = new Route(orig, dest, capacity);
+        this.writeLockConnections.lock();
         LockObject<Map<String, Route>> connectionsByCityDestWithLock = connectionsByCityOrig.get(origUpperCase);
-        if (connectionsByCityDestWithLock != null) {
-            Map<String,Route> connectionsByCityDest = connectionsByCityDestWithLock.elem();
-            if (connectionsByCityDest.putIfAbsent(destUpperCase, newRoute) != null)
-                throw new RouteAlreadyExistsException(orig, dest);
+        if (connectionsByCityDestWithLock == null) {
+            try {
+                Map<String,Route> connectionsByCityDest = new HashMap<>();
+                connectionsByCityDest.put(destUpperCase, newRoute);
+                connectionsByCityOrig.put(origUpperCase, new LockObject<>(connectionsByCityDest));
+            } finally {
+                this.writeLockConnections.unlock();
+            }
         } else {
-            Map<String,Route> connectionsByCityDest = new HashMap<>();
-            connectionsByCityDest.put(destUpperCase, newRoute);
-            connectionsByCityOrig.put(origUpperCase, new LockObject<>(connectionsByCityDest));
+            try {
+                connectionsByCityDestWithLock.writeLock();
+                this.writeLockConnections.unlock();
+                Map<String,Route> connectionsByCityDest = connectionsByCityDestWithLock.elem();
+                if (connectionsByCityDest.putIfAbsent(destUpperCase, newRoute) != null)
+                    throw new RouteAlreadyExistsException(orig, dest);
+            } finally {
+                connectionsByCityDestWithLock.writeUnlock();
+            }
         }
     }
 
@@ -114,14 +167,19 @@ public class AirportSystem implements IAirportSystem {
     protected Route getRoute(String orig, String dest) throws RouteDoesntExistException {
         String origUpperCase = orig.toUpperCase();
         String destUpperCase = dest.toUpperCase();
-        LockObject<Map<String, Route>> routesByDestCityWithLock = connectionsByCityOrig.get(origUpperCase);
-        if (routesByDestCityWithLock == null || routesByDestCityWithLock.elem().isEmpty())
-            throw new RouteDoesntExistException(orig, dest);
-        Map<String, Route> routesByDestCity = routesByDestCityWithLock.elem();
-        Route route = routesByDestCity.get(destUpperCase);
-        if (route == null)
-            throw new RouteDoesntExistException(orig, dest);
-        return route;
+        try {
+            readLockConnections.lock();
+            LockObject<Map<String, Route>> routesByDestCityWithLock = connectionsByCityOrig.get(origUpperCase);
+            if (routesByDestCityWithLock == null || routesByDestCityWithLock.elem().isEmpty())
+                throw new RouteDoesntExistException(orig, dest);
+            Map<String, Route> routesByDestCity = routesByDestCityWithLock.elem();
+            Route route = routesByDestCity.get(destUpperCase);
+            if (route == null)
+                throw new RouteDoesntExistException(orig, dest);
+            return route;
+        } finally {
+            readLockConnections.unlock();
+        }
     }
 
     /**
@@ -134,11 +192,14 @@ public class AirportSystem implements IAirportSystem {
     private boolean validRoute(String orig, String dest) {
         String origUpperCase = orig.toUpperCase();
         String destUpperCase = dest.toUpperCase();
-        LockObject<Map<String, Route>> routesWithLock = connectionsByCityOrig.get(origUpperCase);
-        if (routesWithLock != null) {
-            return routesWithLock.elem().containsKey(destUpperCase);
+        try {
+            readLockConnections.lock();
+            LockObject<Map<String, Route>> routesWithLock = connectionsByCityOrig.get(origUpperCase);
+            return routesWithLock != null &&
+                   routesWithLock.elem().containsKey(destUpperCase);
+        } finally {
+            readLockConnections.unlock();
         }
-        return false;
     }
 
     /**
@@ -150,17 +211,22 @@ public class AirportSystem implements IAirportSystem {
     private boolean validRoutes(final List<String> cities) {
         String origCity = null;
         String destCity;
-        for (String city : cities) {
-            if (origCity == null) {
+        try {
+            readLockConnections.lock();
+            for (String city : cities) {
+                if (origCity == null) {
+                    origCity = city;
+                    continue;
+                }
+                destCity = city;
+                if (!validRoute(origCity, destCity))
+                    return false;
                 origCity = city;
-                continue;
             }
-            destCity = city;
-            if (!validRoute(origCity, destCity))
-                return false;
-            origCity = city;
+            return true;
+        } finally {
+            readLockConnections.unlock();
         }
-        return true;
     }
 
     /**
@@ -171,16 +237,21 @@ public class AirportSystem implements IAirportSystem {
         String origCity = null;
         String destCity;
         Queue<Route> routes = new ArrayDeque<>();
-        for (String city : cities) {
-            if (origCity == null) {
+        try {
+            readLockConnections.lock();
+            for (String city : cities) {
+                if (origCity == null) {
+                    origCity = city;
+                    continue;
+                }
+                destCity = city;
+                routes.add(getRoute(origCity, destCity));
                 origCity = city;
-                continue;
             }
-            destCity = city;
-            routes.add(getRoute(origCity, destCity));
-            origCity = city;
+            return routes;
+        } finally {
+            readLockConnections.unlock();
         }
-        return routes;
     }
 
     /**
@@ -189,19 +260,36 @@ public class AirportSystem implements IAirportSystem {
      * @param date  Date we want
      * @param route Route
      * @return a Flight
-     * @throws FlightDoesntExistYetException Is launched if the flight doesn't exist yet
      */
-    private Flight getValidFlight(LocalDate date, Route route)
-            throws FlightDoesntExistYetException {
-        LockObject<Map<Route, Flight>> flightsByRouteWithLock = this.flightsByDate.get(date);
-        if (flightsByRouteWithLock == null)
-            throw new FlightDoesntExistYetException();
-        Map<Route, Flight> flightsByRoute = flightsByRouteWithLock.elem();
-        Flight flight = flightsByRoute.get(route);
-        if (flight == null)
-            throw new FlightDoesntExistYetException();
+    private Flight getValidFlight(LocalDate date, Route route) {
+        Map<Route, Flight> flightsByRoute;
+        LockObject<Map<Route, Flight>> flightsByRouteWithLock;
+        try {
+            writeLockFlightsByDate.lock();
+            flightsByRouteWithLock = this.flightsByDate.get(date);
+            if (flightsByRouteWithLock == null) {
+                Flight flight = addFlight(route, date);
+                flight.lock();
+                return flight;
+            }
 
-        return flight;
+            flightsByRouteWithLock.writeLock();
+            flightsByRoute = flightsByRouteWithLock.elem();
+
+        } finally {
+            writeLockFlightsByDate.unlock();
+        }
+        try {
+            Flight flight = flightsByRoute.get(route);
+            if (flight == null) {
+                flight = addFlight(route, date);
+            }
+
+            flight.lock();
+            return flight;
+        } finally {
+            flightsByRouteWithLock.writeUnlock();
+        }
     }
 
     /**
@@ -210,7 +298,7 @@ public class AirportSystem implements IAirportSystem {
      * @param cities the connections.
      * @param start  the start date of the interval.
      * @param end    the end date of the interval.
-     * @return The available flights
+     * @return The available flights with lock active
      */
     private Set<Flight> getConnectedFlights(List<String> cities, LocalDate start, LocalDate end)
             throws BookingFlightsNotPossibleException, RouteDoesntExistException {
@@ -237,15 +325,10 @@ public class AirportSystem implements IAirportSystem {
             }
 
             Flight flight;
-            try {
-                flight = getValidFlight(dateToSearch, route);
-            } catch (FlightDoesntExistYetException e) {
-                flight = addFlight(route, dateToSearch);
-            }
+            flight = getValidFlight(dateToSearch, route);
 
-            if (flight.seatAvailable())
-                flight.lock();
-            else {
+            if (!flight.seatAvailable()) {
+                flight.unlock();
                 dateToSearch = dateToSearch.plusDays(1);
                 continue;
             }
@@ -269,17 +352,32 @@ public class AirportSystem implements IAirportSystem {
      */
     private Flight addFlight(Route route, LocalDate date) {
         Flight flight = new Flight(route, date);
-        flightsById.putIfAbsent(flight.id, flight);
-        LockObject<Map<Route, Flight>> flightsWithLock = flightsByDate.get(date);
-        if (flightsWithLock == null) {
-            flightsWithLock = new LockObject<>(new HashMap<>());
-            flightsWithLock.elem().put(route, flight);
-            flightsByDate.put(date, flightsWithLock);
-        } else {
-            flightsWithLock.elem().put(route, flight);
-            //flights.put(route, flightsWithLock.elem().put(flight));
+        LockObject<Map<Route, Flight>> flightsWithLock;
+        try {
+            writeLockFlightsByDate.lock();
+            flightsWithLock = flightsByDate.get(date);
+
+            writeLockFlights.lock();
+            flightsById.putIfAbsent(flight.id, flight);
+
+            if (flightsWithLock == null) {
+                flightsWithLock = new LockObject<>(new HashMap<>());
+                flightsWithLock.elem().put(route, flight);
+                flightsByDate.put(date, flightsWithLock);
+                return flight;
+            }
+            flightsWithLock.writeLock();
+        } finally {
+            writeLockFlights.unlock();
+            writeLockFlightsByDate.unlock();
         }
-        return flight;
+        try {
+            flightsWithLock.elem().put(route, flight);
+                //flights.put(route, flightsWithLock.elem().put(flight));
+            return flight;
+        } finally {
+            flightsWithLock.writeUnlock();
+        }
     }
 
     /**
@@ -293,10 +391,19 @@ public class AirportSystem implements IAirportSystem {
      */
     // FIXME change strategy -> locks flights
     public UUID reserveFlight(String userName, List<String> cities, LocalDate start, LocalDate end)
-            throws BookingFlightsNotPossibleException, RouteDoesntExistException {
-            User user = usersById.get(userName);
+            throws BookingFlightsNotPossibleException, RouteDoesntExistException, UserNotFoundException {
+        User user;
+        try {
+            this.readLockUser.lock();
+            user = usersById.get(userName);
+        } finally {
+            this.readLockUser.unlock();
+        }
 
-            Set<Flight> flights;
+        if (user == null)
+            throw new UserNotFoundException("User not found: " + userName + " [username]");
+
+        Set<Flight> flights;
             try {
                 flights = getConnectedFlights(cities, start, end);
             } catch (BookingFlightsNotPossibleException e) {
@@ -304,14 +411,17 @@ public class AirportSystem implements IAirportSystem {
             }
             // Set<UUID> flightIds = flights.stream().map(e -> e.id).collect(Collectors.toSet());
             Reservation reservation = new Reservation(user, flights);
-            reservationsById.put(reservation.id, reservation);
+            try {
+                writeLockReservations.lock();
+                reservationsById.put(reservation.id, reservation);
+            } finally {
+                writeLockReservations.unlock();
+            }
             user.addReservation(reservation.id);
 
         try {
             for (Flight flight: flights) {
                 flight.addReservation(reservation);
-               // flight.unlock();
-                //flights.remove(flight);
             }
         } catch (FullFlightException e) {
             // nao devia acontecer
@@ -339,19 +449,32 @@ public class AirportSystem implements IAirportSystem {
     public Reservation cancelReservation(String userName, UUID reservationId) throws ReservationNotFoundException,
             ReservationDoesNotBelongToTheClientException, UserNotFoundException {
 
-        Reservation reservation = this.reservationsById.remove(reservationId);
+        Reservation reservation;
+        try {
+            writeLockReservations.lock();
+            reservation = this.reservationsById.remove(reservationId);
+        } finally {
+            writeLockReservations.unlock();
+        }
 
         if (reservation == null) {
             throw new ReservationNotFoundException(reservationId);
         }
-        User user = usersById.get(userName);
+
+        User user = getUserById(userName);
+
         if (user == null) {
-            this.reservationsById.put(reservationId, reservation);
-            throw new UserNotFoundException("User not found: " + userName + " [username]");
+            try {
+                writeLockReservations.lock();
+                this.reservationsById.put(reservationId, reservation);
+                throw new UserNotFoundException("User not found: " + userName + " [username]");
+            } finally {
+                writeLockReservations.unlock();
+            }
         }
+
         if (!user.containsReservation(reservationId))
             throw new ReservationDoesNotBelongToTheClientException(reservationId, userName);
-
 
         reservation.cancelReservation();
         user.removeReservation(reservationId);
@@ -359,9 +482,13 @@ public class AirportSystem implements IAirportSystem {
     }
 
     private void cancelReservation(Set<Reservation> reservations) {
-        for (Reservation reservation : reservations) {
-            //reservation.cancelReservation();
-            this.reservationsById.remove(reservation.id);
+        try {
+            this.readLockReservations.lock();
+            for (Reservation reservation : reservations) {
+                this.reservationsById.remove(reservation.id);
+            }
+        } finally {
+            this.readLockReservations.unlock();
         }
     }
 
@@ -374,37 +501,54 @@ public class AirportSystem implements IAirportSystem {
     public Set<Reservation> cancelDay(LocalDate day) throws DayAlreadyCanceledException {
         if (invalidDate(day))
             throw new DayAlreadyCanceledException(day);
-        this.canceledDays.add(day);
-        Set<Reservation> canceledReservations = new HashSet<>();
-        //lock flighys by date
-        LockObject<Map<Route, Flight>> flightsOneDayWithLock = this.flightsByDate.remove(day);
-        if (flightsOneDayWithLock == null)
-            return new HashSet<>();
-        //look ao LockObject
-        // unlock do flights by date
 
-        Map<Route, Flight> flightsOneDay = flightsOneDayWithLock.elem();
-        if (flightsOneDay == null || flightsOneDay.isEmpty())
-            return new HashSet<>();
-        List<Flight> flights = new ArrayList<>(flightsOneDay.values());
-        // Maybe thrown an exception when doesn't exist reservations in that day
-        if (!flights.isEmpty()) {
-            for (Flight flight : flights) {
-                // Remove flight from flightsById
-                this.flightsById.remove(flight.id);
-                //TOdo
-                //for (UUID reservationId : flight.getReservations()) {
-                //    // Remove reservation from reservationsById
-                //    Reservation reservation = reservationsById.remove(reservationId);
-                //    reservation.cancelReservation();
-                //    canceledReservations.add(reservation);
-                //}
-                canceledReservations.addAll(flight.getReservations());
-                flight.cancelFlight();
-            }
+        try {
+            this.writeLockCanceledDays.lock();
+            this.canceledDays.add(day);
+        } finally {
+            this.writeLockCanceledDays.unlock();
         }
-        cancelReservation(canceledReservations);
-        return canceledReservations;
+
+        Set<Reservation> canceledReservations = new HashSet<>();
+        LockObject<Map<Route, Flight>> flightsOneDayWithLock;
+        try {
+            this.writeLockFlightsByDate.lock();
+            flightsOneDayWithLock = this.flightsByDate.remove(day);
+            if (flightsOneDayWithLock == null)
+                return new HashSet<>();
+
+            flightsOneDayWithLock.writeLock();
+        } finally {
+            this.writeLockFlightsByDate.lock();
+        }
+        try {
+            Map<Route, Flight> flightsOneDay = flightsOneDayWithLock.elem();
+            if (flightsOneDay == null || flightsOneDay.isEmpty())
+                return new HashSet<>();
+
+            List<Flight> flights = new ArrayList<>(flightsOneDay.values());
+            if (!flights.isEmpty()) {
+                flights.forEach(Flight::lock);
+                try {
+                    for (Flight flight : flights) {
+                        try {
+                            this.writeLockFlights.lock();
+                            this.flightsById.remove(flight.id);
+                        } finally {
+                            this.writeLockFlights.unlock();
+                        }
+                        canceledReservations.addAll(flight.getReservations());
+                        flight.cancelFlight();
+                    }
+                } finally {
+                    flights.forEach(Flight::unlock);
+                }
+            }
+            cancelReservation(canceledReservations);
+            return canceledReservations;
+        } finally {
+            flightsOneDayWithLock.writeUnlock();
+        }
     }
 
     /**
@@ -413,15 +557,23 @@ public class AirportSystem implements IAirportSystem {
      * @return the list of the existent routes.
      */
     public List<Route> getRoutes() {
-        return this.connectionsByCityOrig.values()
-                .stream()
-                .flatMap(e -> {
-                    //Dar lock do elems
-                    var elems = e.elem().values();
-                    return elems.stream();
-                    //dar unlock do elems
-                })
-                .collect(Collectors.toList());
+        try {
+            this.readLockConnections.lock();
+            return this.connectionsByCityOrig.values()
+                    .stream()
+                    .flatMap(e -> {
+                        try {
+                            e.readLock();
+                            var elems = e.elem().values();
+                            return elems.stream();
+                        } finally {
+                            e.readUnlock();
+                        }
+                    })
+                    .collect(Collectors.toList());
+        } finally {
+            this.readLockConnections.unlock();
+        }
     }
 
     /**
@@ -432,9 +584,14 @@ public class AirportSystem implements IAirportSystem {
      */
     private void register(User user) throws UsernameAlreadyExistsException {
         String username = user.getUsername();
-        if (usersById.containsKey(username))
-            throw new UsernameAlreadyExistsException("Username already exists: " + username);
-        usersById.put(username, user);
+        try {
+            this.writeLockUser.lock();
+            if (usersById.containsKey(username))
+                throw new UsernameAlreadyExistsException("Username already exists: " + username);
+            usersById.put(username, user);
+        } finally {
+            this.writeLockUser.unlock();
+        }
     }
 
     /**
@@ -447,9 +604,14 @@ public class AirportSystem implements IAirportSystem {
      */
     public User registerClient(String username, String password) throws UsernameAlreadyExistsException {
         User user = new Client(username, password);
-        register(user);
-        return user;
-    }
+        try {
+            this.writeLockUser.lock();
+            register(user);
+            return user;
+        } finally {
+            this.writeLockUser.unlock();
+        }
+}
 
     /**
      * Registers an admin into the system.
@@ -461,8 +623,13 @@ public class AirportSystem implements IAirportSystem {
      */
     public User registerAdmin(String username, String password) throws UsernameAlreadyExistsException {
         User user = new Admin(username, password);
-        register(user);
-        return user;
+        try {
+            this.writeLockUser.lock();
+            register(user);
+            return user;
+        } finally {
+            this.writeLockUser.unlock();
+        }
     }
 
     /**
@@ -476,12 +643,17 @@ public class AirportSystem implements IAirportSystem {
      */
     public User authenticate(String username, String password)
             throws UserNotFoundException, InvalidCredentialsException {
-        User user = usersById.get(username);
-        if (user == null)
-            throw new UserNotFoundException("User not found: " + username + " [username]");
+        try {
+            this.readLockUser.lock();
+            User user = usersById.get(username);
+            if (user == null)
+                throw new UserNotFoundException("User not found: " + username + " [username]");
 
-        if (!user.validPassword(password))
-            throw new InvalidCredentialsException("Invalid credentials: " + username + " [username]");
-        return user;
+            if (!user.validPassword(password))
+                throw new InvalidCredentialsException("Invalid credentials: " + username + " [username]");
+            return user;
+        } finally {
+            this.readLockUser.unlock();
+        }
     }
 }
