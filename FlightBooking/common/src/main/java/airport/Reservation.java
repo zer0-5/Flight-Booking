@@ -8,6 +8,9 @@ import java.util.HashSet;
 import java.util.Iterator;
 import java.util.Set;
 import java.util.UUID;
+import java.util.concurrent.locks.Lock;
+import java.util.concurrent.locks.ReentrantLock;
+import java.util.concurrent.locks.ReentrantReadWriteLock;
 import java.util.stream.Collectors;
 
 /**
@@ -31,6 +34,9 @@ public class Reservation {
      */
     private final Set<Flight> flights;
 
+    private final Lock readLockFlights;
+    private final Lock writeLockFlights;
+
     /**
      * Constructor
      *
@@ -41,21 +47,26 @@ public class Reservation {
         this.id = UUID.randomUUID();
         this.client = client;
         this.flights = flightsIds;
+        ReentrantReadWriteLock rwFlights = new ReentrantReadWriteLock();
+        this.readLockFlights = rwFlights.readLock();
+        this.writeLockFlights = rwFlights.writeLock();
     }
 
-    private Reservation(UUID id, User client, Set<Flight> flights) {
-        this.id = id;
-        this.client = client;
-        this.flights = flights;
-    }
 
     /**
-     * Return all flight ids from this reservation.
+     * Cancel the reservation on all flights involved in the given reservation
      *
-     * @return Flight ids
      */
-    public Set<Flight> getFlights() {
-        return new HashSet<>(flights);
+    public void cancelReservation() {
+        try {
+            writeLockFlights.lock();
+            for (Flight flight : flights) {
+                if (flight != null)
+                    flight.removeReservation(this);
+            }
+        } finally {
+            writeLockFlights.unlock();
+        }
     }
 
     /**
