@@ -94,8 +94,23 @@ public class Client implements Runnable {
         }
     }
 
-    private void cancelReservation() {
+    private void cancelReservation() throws NotLoggedInException, IOException {
         // TODO:
+        if (!logged_in) throw new NotLoggedInException();
+
+        String uuid = in.nextLine();
+
+        List<byte[]> list = new ArrayList<>();
+        list.add(uuid.getBytes(StandardCharsets.UTF_8));
+        taggedConnection.send(CANCEL_RESERVATION.ordinal(), list);
+
+        Frame response = taggedConnection.receive();
+
+        if (checkError(response)) printError(response);
+        else {
+            System.out.println("Cancel reservation with success!");
+            System.out.println(Reservation.deserialize(response.data().get(0)));
+        }
     }
 
     private void reserve() throws NotLoggedInException, IOException {

@@ -292,8 +292,8 @@ public class AirportSystem implements IAirportSystem {
         } catch (BookingFlightsNotPossibleException e) {
             throw new BookingFlightsNotPossibleException();
         }
-        Set<UUID> flightIds = flights.stream().map(e -> e.id).collect(Collectors.toSet());
-        Reservation reservation = new Reservation(user, flightIds);
+        //Set<UUID> flightIds = flights.stream().map(e -> e.id).collect(Collectors.toSet());
+        Reservation reservation = new Reservation(user, flights);
         for (Flight flight : flights) {
             try {
                 flight.addReservation(reservation.id);
