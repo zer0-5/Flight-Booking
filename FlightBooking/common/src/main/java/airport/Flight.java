@@ -153,34 +153,4 @@ public class Flight {
                 "to =" + route.destination +
                 '}';
     }
-
-    /**
-     * Get all reservation's ids on the flight
-     *
-     * @return reservation's ids
-     */
-    public Set<UUID> getReservations() {
-        return new HashSet<>(reservations);
-    }
-
-    /**
-     * Checks if there are available seats.
-     *
-     * @return true if there is a seat.
-     */
-    public boolean seatAvailable() {
-        return route.capacity > currentOccupation;
-    }
-
-    public void preReservationSeat() throws FullFlightException {
-        if (seatAvailable())
-            currentOccupation++;
-        else
-            throw new FullFlightException();
-    }
-
-    public void cancelSeat() {
-        if (currentOccupation > 0)
-            currentOccupation--;
-    }
 }

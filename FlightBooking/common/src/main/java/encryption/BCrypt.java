@@ -381,7 +381,6 @@ public class BCrypt {
      *
      * @param d   the byte array to encode
      * @param len the number of bytes to encode
-
      * @return base64-encoded string
      * @throws IllegalArgumentException if the length is invalid
      */

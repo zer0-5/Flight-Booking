@@ -118,16 +118,6 @@ public class AirportSystem implements IAirportSystem {
     }
 
     /**
-     * See if a certain date is in the canceled days.
-     *
-     * @param dateToSearch Date
-     * @return true if the given date is canceled.
-     */
-    private boolean invalidDate(LocalDate dateToSearch) {
-        return canceledDays.contains(dateToSearch);
-    }
-
-    /**
      * Method to add a connection between two cities, with a given capacity.
      *
      * @param orig     the origin city.
