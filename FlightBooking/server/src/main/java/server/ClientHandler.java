@@ -88,9 +88,8 @@ public class ClientHandler implements Runnable {
 
     }
 
-    private void getReservations() throws IOException {
-        //Set<Reservation> reservations = airportSystem.;
-        Set<Reservation> reservations = new HashSet<>();
+    private void getReservations() throws IOException, UserNotFoundException {
+        Set<Reservation> reservations = airportSystem.getReservationsFromClient(account.getUsername());
 
         sendOk(CANCEL_RESERVATION.ordinal(), reservations.stream().map(Reservation::serialize).collect(Collectors.toList()));
     }
