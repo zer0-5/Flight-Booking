@@ -1,16 +1,11 @@
 package airport;
 
-import exceptions.FullFlightException;
-
-import java.nio.ByteBuffer;
-import java.nio.charset.StandardCharsets;
 import java.time.LocalDate;
 import java.util.HashSet;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
-import java.util.stream.Collectors;
 
 /**
  * Represents a flight.
@@ -43,21 +38,10 @@ public class Flight {
 
     //private final ReadWriteLock rwReservation ;
     // Get reservations
-    private transient final Lock readLockReservation;
+    private final Lock readLockReservation;
 
     // Adicionar a reserva depois de ter sido bloqueado.
     private final Lock writeLockReservation;
-
-
-    public Flight(UUID id, Route route, LocalDate date, Set<Reservation> reservations) {
-        this.id = id;
-        this.route = route;
-        this.date = date;
-        this.reservations = new HashSet<>(reservations);
-        ReentrantReadWriteLock rwReservation = new ReentrantReadWriteLock();
-        this.readLockReservation = rwReservation.readLock();
-        this.writeLockReservation = rwReservation.writeLock();
-    }
 
     /**
      * Constructor of the flight.
@@ -140,7 +124,7 @@ public class Flight {
         try {
             writeLockReservation.lock();
             for (Reservation reservation : reservations) {
-                reservation.cancelReservation();
+                reservation.cancelReservation(id);
             }
         } finally {
             writeLockReservation.unlock();

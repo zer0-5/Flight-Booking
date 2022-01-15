@@ -98,6 +98,15 @@ public class User {
         }
     }
 
+    public void addReservation(UUID reservation) {
+        try {
+            lock.lock();
+            this.reservations.add(reservation);
+        } finally {
+            lock.unlock();
+        }
+    }
+
     public void removeReservation(UUID reservation) {
         try {
             lock.lock();
@@ -111,6 +120,15 @@ public class User {
         try {
             lock.lock();
             return this.reservations.contains(reservation);
+        } finally {
+            lock.unlock();
+        }
+    }
+
+    public Set<UUID> getReservations() {
+        try {
+            lock.lock();
+            return new HashSet<>(reservations);
         } finally {
             lock.unlock();
         }
