@@ -83,6 +83,7 @@ class AirportSystemTest {
         addRoute("London", "Paris", 1);
         addRoute("Paris", "Lisbon", 1);
     }
+
     // -------------------- Add Route -------------------
 
     private void initUser() {
@@ -98,6 +99,7 @@ class AirportSystemTest {
     @ParameterizedTest
     @CsvSource({"Lisbon,London,30", "London,Paris,1", "Lisbon,Paris,23"})
     public void addRoute(String orig, String dest, int capacity) {
+
         //System.out.println("Add route");
         Assertions.assertDoesNotThrow(() -> {
             airportSystem.addRoute(orig, dest, capacity);
@@ -111,6 +113,7 @@ class AirportSystemTest {
     @CsvSource({"Lisbon,London,30", "Lisbon,London,23", "LiSBon,London,30", "Lisbon,LOndoN,30", "LISbon,lonDOn,21"})
     void routeAlreadyExistException(String orig, String dest, int capacity) {
         //System.out.println("rota existe");
+
         addRoute("Lisbon", "London", 30);
         Assertions.assertThrows(RouteAlreadyExistsException.class, () ->
                 airportSystem.addRoute(orig, dest, capacity));
@@ -120,6 +123,7 @@ class AirportSystemTest {
     @CsvSource({"Lisbon,Lisbon,30"})
     void routeSameOriginDestinationException(String orig, String dest, int capacity) {
         //System.out.println("rota igual");
+
         Assertions.assertThrows(RouteDoesntExistException.class, () ->
                 airportSystem.addRoute(orig, dest, capacity));
     }
@@ -142,6 +146,7 @@ class AirportSystemTest {
             //System.out.println("GET route: " + orig.toUpperCase() + "-> " + dest.toLowerCase());
             routes_tested.add(airportSystem.getRoute(orig.toUpperCase(), dest.toLowerCase()));
             //System.out.println("GET route: " + orig.toLowerCase() + "-> " + dest.toUpperCase());
+
             routes_tested.add(airportSystem.getRoute(orig.toLowerCase(), dest.toUpperCase()));
             for (Route tested : routes_tested) {
                 assert tested.origin.equals(orig);
@@ -281,6 +286,7 @@ class AirportSystemTest {
         initRoutes_LondonParisLisbon();
         List<String> cities = new ArrayList<>(Arrays.asList("Paris", "Lisbon"));
         String client = "Hello";
+
         Assertions.assertDoesNotThrow(() -> {
             User user = airportSystem.registerClient(client, client);
             UUID reservation = airportSystem.reserveFlight(client, cities, date, date);
@@ -380,6 +386,7 @@ class AirportSystemTest {
         Assertions.assertThrows(ReservationNotFoundException.class, () -> {
             UUID reservation = airportSystem.reserveFlight(client, cities, date, date);
             //System.out.println("Quero cancelar: " + reservation);
+
             airportSystem.cancelDay(date);
             airportSystem.cancelReservation(client, reservation);
         });
@@ -486,6 +493,7 @@ class AirportSystemTest {
         registerClient(username, password);
         Assertions.assertThrows(UserNotFoundException.class, () -> {
             //System.out.println("TRY: Authenticate user -> " + username.toUpperCase());
+
             airportSystem.authenticate(username.toUpperCase(), password);
         });
         registerAdmin(username.toUpperCase(), password);
@@ -515,6 +523,4 @@ class AirportSystemTest {
             airportSystem.authenticate(username, password.toUpperCase());
         });
     }
-
-
 }

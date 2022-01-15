@@ -46,6 +46,8 @@ public class Flight {
     private final Lock writeLockReservation;
 
 
+    private int currentOccupation;
+
     /**
      * Constructor of the flight.
      *
@@ -53,6 +55,7 @@ public class Flight {
      * @param date  the date.
      */
     public Flight(Route route, LocalDate date) {
+        this.currentOccupation = 0;
         this.id = UUID.randomUUID();
         this.route = route;
         this.date = date;
@@ -149,5 +152,35 @@ public class Flight {
                 "\nroute from =" + route.origin +
                 "to =" + route.destination +
                 '}';
+    }
+
+    /**
+     * Get all reservation's ids on the flight
+     *
+     * @return reservation's ids
+     */
+    public Set<UUID> getReservations() {
+        return new HashSet<>(reservations);
+    }
+
+    /**
+     * Checks if there are available seats.
+     *
+     * @return true if there is a seat.
+     */
+    public boolean seatAvailable() {
+        return route.capacity > currentOccupation;
+    }
+
+    public void preReservationSeat() throws FullFlightException {
+        if (seatAvailable())
+            currentOccupation++;
+        else
+            throw new FullFlightException();
+    }
+
+    public void cancelSeat() {
+        if (currentOccupation > 0)
+            currentOccupation--;
     }
 }

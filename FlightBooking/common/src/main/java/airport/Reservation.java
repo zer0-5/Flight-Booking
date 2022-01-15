@@ -30,12 +30,14 @@ public class Reservation {
 
     private final Lock lockFlights;
 
+
     /**
      * Constructor
      *
      * @param client     Client.
      * @param flightsIds a set of flight's id.
      */
+
     public Reservation(User client, Set<Flight> flightsIds) {
         this.id = UUID.randomUUID();
         this.client = client;
@@ -96,6 +98,4 @@ public class Reservation {
             res.append(flights.toString());
         return res.toString();
     }
-
-
 }
