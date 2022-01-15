@@ -1,6 +1,7 @@
 import airport.Reservation;
 import airport.Route;
 import connection.TaggedConnection;
+import exceptions.AlreadyLoggedInException;
 import exceptions.NotLoggedInException;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -39,24 +40,28 @@ public class Client implements Runnable {
         try {
             boolean quit = false;
             while (!quit) {
-                out.print(getMenu());
-                int option = Integer.parseInt(in.nextLine());
-                switch (getRequestType(option)) {
-                    case REGISTER -> register();
-                    case LOGIN -> login();
-                    case EXIT -> {
-                        quit();
-                        quit = true;
+                try {
+                    out.print(getMenu());
+                    int option = Integer.parseInt(in.nextLine());
+                    switch (getRequestType(option)) {
+                        case REGISTER -> register();
+                        case LOGIN -> login();
+                        case EXIT -> {
+                            quit();
+                            quit = true;
+                        }
+
+                        case CANCEL_DAY -> cancelDay();
+                        case INSERT_ROUTE -> insertRoute();
+
+                        case GET_ROUTES -> getRoutes();
+                        case RESERVE -> reserve();
+                        case CANCEL_RESERVATION -> cancelReservation();
                     }
-
-                    case CANCEL_DAY -> cancelDay();
-                    case INSERT_ROUTE -> insertRoute();
-
-                    case GET_ROUTES -> getRoutes();
-                    case RESERVE -> reserve();
-                    case CANCEL_RESERVATION -> cancelReservation();
+                    out.println();
+                } catch (Exception e) {
+                    out.println(e.getMessage() + '\n');
                 }
-                out.println();
             }
 
             taggedConnection.close();
@@ -75,10 +80,12 @@ public class Client implements Runnable {
      * Sends one request to the server with the username and password.
      * Then, it waits for a response, and handles it.
      */
-    private void login() throws IOException {
-        out.println("Insert username: ");
+    private void login() throws IOException, AlreadyLoggedInException {
+        if (logged_in) throw new AlreadyLoggedInException();
+
+        out.print("Insert username: ");
         String username = in.nextLine();
-        out.println("Insert password: ");
+        out.print("Insert password: ");
         String password = in.nextLine();
 
         List<byte[]> args = new ArrayList<>();
@@ -97,9 +104,9 @@ public class Client implements Runnable {
     }
 
     private void cancelReservation() throws NotLoggedInException, IOException {
-        // TODO:
         if (!logged_in) throw new NotLoggedInException();
 
+        out.print("Insert the id of the reservation: ");
         String uuid = in.nextLine();
 
         List<byte[]> list = new ArrayList<>();
@@ -167,13 +174,13 @@ public class Client implements Runnable {
     private void insertRoute() throws IOException, NotLoggedInException {
         if (!logged_in) throw new NotLoggedInException();
 
-        out.println("Insert origin route: ");
+        out.print("Insert origin route: ");
         String origin = in.nextLine();
 
-        out.println("Insert destiny route: ");
+        out.print("Insert destiny route: ");
         String destiny = in.nextLine();
 
-        out.println("Insert capacity of the route: ");
+        out.print("Insert capacity of the route: ");
         int capacity = Integer.parseInt(in.nextLine());
 
         List<byte[]> list = new ArrayList<>();
@@ -207,11 +214,13 @@ public class Client implements Runnable {
         // TODO:
     }
 
-    private void register() throws IOException {
-        out.println("Insert username: ");
+    private void register() throws IOException, AlreadyLoggedInException {
+        if (logged_in) throw new AlreadyLoggedInException();
+
+        out.print("Insert username: ");
         String username = in.nextLine();
 
-        out.println("Insert password: ");
+        out.print("Insert password: ");
         String password = in.nextLine();
 
         List<byte[]> list = new ArrayList<>();
@@ -231,11 +240,12 @@ public class Client implements Runnable {
     }
 
     private void printError(Frame frame) {
-        out.println("ERROR!");
+        // out.println("ERROR!");
+        out.println();
         for (int i = 1; i < frame.data().size(); i++) {
             out.println(new String(frame.data().get(i)));
         }
-        out.println("Error with the request: " + frame.data().stream().map(String::new).collect(Collectors.joining(" ")));
+        // out.println("Error with the request: " + frame.data().stream().map(String::new).collect(Collectors.joining(" ")));
     }
 
 }

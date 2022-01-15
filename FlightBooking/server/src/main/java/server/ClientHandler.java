@@ -40,7 +40,8 @@ public class ClientHandler implements Runnable {
     @Override
     public void run() {
         try {
-            logger.info("Starting a new connection with client!");
+            logger.info("Starting a new connection with client [Address: " +
+                    taggedConnection.getIP() + ":" + taggedConnection.getPort() + " ]");
 
             boolean quit = false;
             while (!quit) {
@@ -122,6 +123,7 @@ public class ClientHandler implements Runnable {
 
     private void insertRoute(List<byte[]> data) throws RouteDoesntExistException, RouteAlreadyExistsException, IOException, ForbiddenException {
         if (!isLoggedIn() || !(account instanceof Admin)) throw new ForbiddenException(account);
+
         airportSystem.addRoute(new String(data.get(0)), new String(data.get(1)), ByteBuffer.wrap(data.get(2)).getInt());
         sendOk(INSERT_ROUTE.ordinal(), new ArrayList<>());
     }
@@ -129,7 +131,7 @@ public class ClientHandler implements Runnable {
     private void cancelDay(List<byte[]> data) throws DayAlreadyCanceledException, IOException, ForbiddenException {
         if (!isLoggedIn() || !(account instanceof Admin)) throw new ForbiddenException(account);
 
-        var reservations= airportSystem.cancelDay(LocalDate.parse(new String(data.get(0))));
+        var reservations = airportSystem.cancelDay(LocalDate.parse(new String(data.get(0))));
 
         sendOk(CANCEL_DAY.ordinal(), reservations.stream().map(Reservation::serialize).collect(Collectors.toList()));
 

@@ -1,6 +1,7 @@
 package connection;
 
 import java.io.*;
+import java.net.InetAddress;
 import java.net.Socket;
 import java.util.ArrayList;
 import java.util.List;
@@ -59,6 +60,15 @@ public class TaggedConnection implements AutoCloseable {
         } finally {
             in.unlock();
         }
+    }
+
+    public InetAddress getIP() {
+        return socket.getInetAddress();
+    }
+
+
+    public int getPort() {
+        return socket.getPort();
     }
 
     @Override
