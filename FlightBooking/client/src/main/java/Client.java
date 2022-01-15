@@ -78,6 +78,7 @@ public class Client implements Runnable {
 
         Frame response = taggedConnection.receive();
 
+        out.println("Reservations: ");
         response.data().stream().map(Reservation::deserialize).forEach(out::println);
     }
 

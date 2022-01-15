@@ -23,7 +23,7 @@ public class Main {
     @SuppressWarnings({"CanBeFinal", "FieldMayBeFinal", "FieldCanBeLocal"})
     private static boolean running = true;
 
-    private static IAirportSystem initState() throws UsernameAlreadyExistsException, RouteDoesntExistException, RouteAlreadyExistsException, BookingFlightsNotPossibleException, UserNotFoundException {
+    private static IAirportSystem initState() throws UsernameAlreadyExistsException, RouteDoesntExistException, RouteAlreadyExistsException, BookingFlightsNotPossibleException, UserNotFoundException, InvalidDateException {
         IAirportSystem iAirportSystem = new AirportSystem();
 
         iAirportSystem.registerAdmin("admin", "admin");
@@ -43,7 +43,7 @@ public class Main {
         return iAirportSystem;
     }
 
-    public static void main(String[] args) throws IOException, UsernameAlreadyExistsException, RouteDoesntExistException, RouteAlreadyExistsException, BookingFlightsNotPossibleException, UserNotFoundException {
+    public static void main(String[] args) throws IOException, UsernameAlreadyExistsException, RouteDoesntExistException, RouteAlreadyExistsException, BookingFlightsNotPossibleException, UserNotFoundException, InvalidDateException {
         IAirportSystem iAirportSystem = initState();
 
         try (ServerSocket serverSocket = new ServerSocket(PORT)) {

@@ -103,7 +103,7 @@ public class ClientHandler implements Runnable {
         sendOk(CANCEL_RESERVATION.ordinal(), list);
     }
 
-    private void reserve(List<byte[]> data) throws UserNotFoundException, RouteDoesntExistException, BookingFlightsNotPossibleException, IOException, UserNotLoggedInException {
+    private void reserve(List<byte[]> data) throws UserNotFoundException, RouteDoesntExistException, BookingFlightsNotPossibleException, IOException, UserNotLoggedInException, InvalidDateException {
         if (!isLoggedIn()) throw new UserNotLoggedInException();
         List<String> cities = new ArrayList<>();
 

@@ -238,12 +238,12 @@ class AirportSystemTest {
             fail();
         } catch (BookingFlightsNotPossibleException ignored) {
             //System.out.println("One flight isn't possible, the pre-reservations should be removed.");
-        } catch (RouteDoesntExistException | UserNotFoundException ignored) {
+        } catch (Exception ignored) {
             fail();
         }
         try {
             airportSystem.reserveFlight(username, cities3, date, date);
-        } catch (RouteDoesntExistException | BookingFlightsNotPossibleException | UserNotFoundException e) {
+        } catch (Exception e) {
             fail();
         }
     }

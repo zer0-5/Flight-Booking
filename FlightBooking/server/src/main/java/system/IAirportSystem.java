@@ -46,7 +46,7 @@ public interface IAirportSystem {
      * @throws RouteDoesntExistException          if there is no route possible.
      */
     UUID reserveFlight(String userName, List<String> cities, LocalDate start, LocalDate end)
-            throws BookingFlightsNotPossibleException, RouteDoesntExistException, UserNotFoundException;
+            throws BookingFlightsNotPossibleException, RouteDoesntExistException, UserNotFoundException, InvalidDateException;
 
 
     /**

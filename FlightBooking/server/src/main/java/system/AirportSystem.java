@@ -392,7 +392,11 @@ public class AirportSystem implements IAirportSystem {
      * @return the reservation's id.
      */
     public UUID reserveFlight(String userName, List<String> cities, LocalDate start, LocalDate end)
-            throws BookingFlightsNotPossibleException, RouteDoesntExistException, UserNotFoundException {
+            throws BookingFlightsNotPossibleException, RouteDoesntExistException, UserNotFoundException, InvalidDateException {
+
+        if (((start.isEqual(LocalDate.now()) || start.isAfter(LocalDate.now()))) && (end.isEqual(start) || end.isAfter(start)))
+            throw new InvalidDateException(start, end);
+
         User user;
         try {
             this.readLockUser.lock();
@@ -673,7 +677,7 @@ public class AirportSystem implements IAirportSystem {
 
         Set<Reservation> list = new HashSet<>();
         try {
-            this.readLockUser.lock();
+            this.readLockReservations.lock();
             for (UUID id : reservations) {
                 Reservation r = this.reservationsById.get(id);
                 if (r != null)
