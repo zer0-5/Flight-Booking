@@ -84,13 +84,6 @@ public class Client implements Runnable {
 
     private void quit() throws IOException {
         taggedConnection.send(EXIT.ordinal(), new ArrayList<>());
-
-        Frame response = taggedConnection.receive();
-
-        if (checkError(response)) printError(response);
-        else {
-            out.println(" in!");
-        }
     }
 
     /**
