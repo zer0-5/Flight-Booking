@@ -40,7 +40,7 @@ class ClientTest {
 
         Assertions.assertDoesNotThrow(() -> client.insertRoute(city1, city2, capacity));
     };
-    private final int N_THREADS = 20;
+    private final int N_THREADS = 100;
     private final Thread[] threads = new Thread[N_THREADS];
 
     private static Stream<Arguments> methods() {

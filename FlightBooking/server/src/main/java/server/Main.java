@@ -14,7 +14,6 @@ import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
-import java.util.concurrent.Executors;
 
 public class Main {
     public static final int PORT = 12345;
@@ -48,7 +47,7 @@ public class Main {
 
         try (ServerSocket serverSocket = new ServerSocket(PORT)) {
             logger.info("ServerSocket starting...");
-            var pool = Executors.newFixedThreadPool(NTHREADS); // TODO: Fazer isto manualmente
+            var pool = new ThreadPool(NTHREADS, NTHREADS * 2);
 
             while (running) pool.execute(new ClientHandler(serverSocket.accept(), iAirportSystem));
         }
