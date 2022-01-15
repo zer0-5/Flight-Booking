@@ -80,7 +80,7 @@ public class User {
      *
      * @param newPassword new password.
      */
-    public void changerUserPassword(String newPassword) {
+    public void changePassword(String newPassword) {
         try {
             lock.lock();
             this.password = BCrypt.hashpw(newPassword, BCrypt.gensalt());

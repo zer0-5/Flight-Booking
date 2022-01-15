@@ -61,6 +61,8 @@ public class ClientHandler implements Runnable {
                         case GET_PATHS_BETWEEN -> getPathsBetween(data);
                         case RESERVE -> reserve(data);
                         case CANCEL_RESERVATION -> cancelReservation(data);
+                        case LOGOUT -> logout(data);
+                        case CHANGE_PASSWORD -> changePassword(data);
                     }
 
                     logger.info("Request with type " + RequestType.getRequestType(frame.tag()) + " has been successfully handled!");
@@ -89,15 +91,20 @@ public class ClientHandler implements Runnable {
 
     }
 
-    private void getReservations() throws IOException, UserNotFoundException {
+    private void changePassword(List<byte[]> data) {
+        account.changePassword(new String(data.get(0)));
+    }
+
+    private void getReservations() throws IOException, UserNotFoundException, UserNotLoggedInException {
+        if (!isLoggedIn()) throw new UserNotLoggedInException();
         Set<Reservation> reservations = airportSystem.getReservationsFromClient(account.getUsername());
 
         sendOk(CANCEL_RESERVATION.ordinal(), reservations.stream().map(Reservation::serialize).collect(Collectors.toList()));
     }
 
     private void cancelReservation(List<byte[]> data) throws ReservationNotFoundException,
-            ReservationDoesNotBelongToTheClientException, UserNotFoundException, IOException {
-
+            ReservationDoesNotBelongToTheClientException, UserNotFoundException, IOException, UserNotLoggedInException {
+        if (!isLoggedIn()) throw new UserNotLoggedInException();
         Reservation reservation = airportSystem.cancelReservation(account.getUsername(), UUID.fromString(new String(data.get(0))));
         List<byte[]> list = new ArrayList<>();
         list.add(reservation.serialize());
@@ -164,11 +171,9 @@ public class ClientHandler implements Runnable {
         sendOk(LOGIN.ordinal(), new ArrayList<>());
     }
 
-    private void logout() {
+    private void logout(List<byte[]> data) throws IOException {
         account = null;
-
-        // TODO: LogOut
-        //sendOk(LOGOUT, new ArrayList<>());
+        sendOk(LOGOUT.ordinal(), new ArrayList<>());
     }
 
     private void sendOk(int type, List<byte[]> args) throws IOException {

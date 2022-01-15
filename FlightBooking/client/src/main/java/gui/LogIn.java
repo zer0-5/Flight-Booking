@@ -1,5 +1,6 @@
 package gui;
 
+import client.Client;
 import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
 import javafx.fxml.Initializable;
@@ -7,7 +8,6 @@ import javafx.scene.control.Button;
 import javafx.scene.control.Label;
 import javafx.scene.control.TextField;
 import javafx.scene.layout.Pane;
-import users.Client;
 
 import java.net.URL;
 import java.util.ResourceBundle;
@@ -15,7 +15,7 @@ import java.util.ResourceBundle;
 public class LogIn implements Initializable {
 
     @FXML
-    private TextField nif;
+    private TextField username;
 
     @FXML
     private TextField password;
@@ -26,18 +26,18 @@ public class LogIn implements Initializable {
     @FXML
     private Pane errors;
 
-    private ClientCommunication client;
-    private Frame frame;
+    private final Client client;
+    private final Frame frame;
 
-    public LogIn(ClientCommunication client, Frame frame) {
+    public LogIn(Client client, Frame frame) {
         this.client = client;
         this.frame = frame;
     }
 
-    public void login(ActionEvent e)  {
+    public void login(ActionEvent e) {
         resetError();
-            //client.autenticaUtilizador(nif.getText(), password.getText());
-            frame.login();
+        //client.autenticaUtilizador(nif.getText(), password.getText());
+        frame.login();
     }
 
     @Override

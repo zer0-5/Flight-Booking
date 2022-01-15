@@ -1,10 +1,8 @@
-import gui.ClientCommunication;
+import client.Client;
 import gui.Frame;
 import javafx.application.Application;
 import javafx.scene.Scene;
 import javafx.stage.Stage;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 
 public class ClientApp extends Application {
     
@@ -14,8 +12,7 @@ public class ClientApp extends Application {
 
     @Override
     public void start(Stage stage) throws Exception {
-        ClientCommunication client = new ClientCommunication();
-        Frame frame = new Frame(client);
+        Frame frame = new Frame(new Client());
         frame.setStage(stage);
         Scene mainScene = frame.getScene();
 

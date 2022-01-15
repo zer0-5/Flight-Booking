@@ -1,5 +1,6 @@
 package gui;
 
+import client.Client;
 import javafx.fxml.FXML;
 import javafx.fxml.FXMLLoader;
 import javafx.fxml.Initializable;
@@ -40,10 +41,10 @@ public class Frame implements Initializable, Navigator {
     private Button backButton;
 
     private FXMLLoader frameLoader;
-    private ClientCommunication client;
+    private Client client;
     private Stack<Navigatable> navigationStack;
 
-    public Frame(ClientCommunication client) {
+    public Frame(Client client) {
         this.client = client;
         this.navigationStack = new Stack<>();
         frameLoader = new FXMLLoader(getClass().getResource("/gui/Frame.fxml"));

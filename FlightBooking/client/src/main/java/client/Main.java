@@ -1,3 +1,5 @@
+package client;
+
 import gui.ClientCommunication;
 import gui.Frame;
 import javafx.scene.Scene;

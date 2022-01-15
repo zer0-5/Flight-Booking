@@ -1,3 +1,5 @@
+package client;
+
 import airport.PossiblePath;
 import airport.Reservation;
 import airport.Route;
@@ -46,7 +48,7 @@ public class Client implements Runnable {
                     out.print(getMenu());
                     int option = Integer.parseInt(in.nextLine());
                     switch (getRequestType(option)) {
-                        case REGISTER -> register();
+                        case REGISTER -> registerIO();
                         case LOGIN -> loginIO();
                         case EXIT -> {
                             quit();
@@ -61,6 +63,8 @@ public class Client implements Runnable {
                         case GET_PATHS_BETWEEN -> getPathsBetweenIO();
                         case RESERVE -> reserveIO();
                         case CANCEL_RESERVATION -> cancelReservationIO();
+                        case LOGOUT -> logout();
+                        case CHANGE_PASSWORD -> changePasswordIO();
                     }
                     out.println();
                 } catch (Exception e) {
@@ -73,6 +77,18 @@ public class Client implements Runnable {
             out.println(e.getMessage());
         } catch (Exception e) {
             e.printStackTrace();
+        }
+    }
+
+    private void logout() throws IOException {
+        taggedConnection.send(LOGOUT.ordinal(), new ArrayList<>());
+
+        Frame response = taggedConnection.receive();
+
+        if (checkError(response)) printError(response);
+        else {
+            out.println("Logged out!");
+            logged_in = false;
         }
     }
 
@@ -285,7 +301,7 @@ public class Client implements Runnable {
         else logger.info("Day successfully cancelled!");
     }
 
-    protected void register() throws IOException, AlreadyLoggedInException {
+    private void registerIO() throws IOException, AlreadyLoggedInException {
         if (logged_in) throw new AlreadyLoggedInException();
 
         out.print("Insert username: ");
@@ -294,7 +310,12 @@ public class Client implements Runnable {
         out.print("Insert password: ");
         String password = in.nextLine();
 
+        register(username, password);
+    }
+
+    public void register(String username, String password) throws IOException {
         List<byte[]> list = new ArrayList<>();
+
         list.add(username.getBytes(StandardCharsets.UTF_8));
         list.add(password.getBytes(StandardCharsets.UTF_8));
 
@@ -304,6 +325,30 @@ public class Client implements Runnable {
 
         if (checkError(response)) printError(response);
         else logger.info("Account successfully registered!");
+    }
+
+
+    private void changePasswordIO() throws NotLoggedInException, IOException {
+        if (!logged_in) throw new NotLoggedInException();
+
+        out.print("Insert new password: ");
+        String password = in.nextLine();
+
+        changePassword(password);
+    }
+
+    public void changePassword(String password) throws IOException {
+        List<byte[]> list = new ArrayList<>();
+
+        list.add(password.getBytes(StandardCharsets.UTF_8));
+
+        taggedConnection.send(CHANGE_PASSWORD.ordinal(), list);
+
+        Frame response = taggedConnection.receive();
+
+        if (checkError(response)) printError(response);
+        else logger.info("Password successfully changed!");
+
     }
 
     protected boolean checkError(Frame frame) {

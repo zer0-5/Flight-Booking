@@ -101,9 +101,7 @@ class AirportSystemTest {
     @CsvSource({"Lisbon,London,30", "London,Paris,1", "Lisbon,Paris,23"})
     public void addRoute(String orig, String dest, int capacity) {
         //System.out.println("Add route");
-        Assertions.assertDoesNotThrow(() -> {
-            airportSystem.addRoute(orig, dest, capacity);
-        });
+        Assertions.assertDoesNotThrow(() -> airportSystem.addRoute(orig, dest, capacity));
     }
 
 

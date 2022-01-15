@@ -119,6 +119,6 @@ public interface IAirportSystem {
     default void changeUserPassword(String username, String oldPassword, String newPassword)
             throws UserNotFoundException, InvalidCredentialsException {
         User user = authenticate(username, oldPassword);
-        user.changerUserPassword(newPassword);
+        user.changePassword(newPassword);
     }
 }
