@@ -720,10 +720,10 @@ public class AirportSystem implements IAirportSystem {
             PossiblePath p1 = air.getPathsBetween("a", "dest");
             System.out.println("BEFORE P1");
             System.out.println(p1.toStringPretty(""));
-            //PossiblePath p1_ = PossiblePath.deserialize(p1.serialize());
+            PossiblePath p1_ = PossiblePath.deserialize(p1.serialize());
 
-            //System.out.println("AFTER P1");
-            //System.out.println(p1_.toStringPretty(""));
+            System.out.println("AFTER P1");
+            System.out.println(p1_.toStringPretty(""));
 
             PossiblePath p2 = air.getPathsBetween("a", "dest");
             System.out.println(p2.toString());
@@ -733,4 +733,19 @@ public class AirportSystem implements IAirportSystem {
         catch (RouteDoesntExistException e){}
     }
 
+    /**
+     * Used in tests to verify if all routes were inserted.
+     * @return
+     */
+    public int numberCanceledDays(){
+        return canceledDays.size();
+    }
+
+    /**
+     * Used in tests to verify if all clients were inserted.
+     * @return
+     */
+    public long numberClients(){
+        return usersById.values().stream().filter(user -> user instanceof Client).count();
+    }
 }
