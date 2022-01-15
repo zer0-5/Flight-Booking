@@ -394,7 +394,7 @@ public class AirportSystem implements IAirportSystem {
     public UUID reserveFlight(String userName, List<String> cities, LocalDate start, LocalDate end)
             throws BookingFlightsNotPossibleException, RouteDoesntExistException, UserNotFoundException, InvalidDateException {
 
-        if (((start.isEqual(LocalDate.now()) || start.isAfter(LocalDate.now()))) && (end.isEqual(start) || end.isAfter(start)))
+        if (start.isBefore(LocalDate.now()) || end.isBefore(start))
             throw new InvalidDateException(start, end);
 
         User user;
