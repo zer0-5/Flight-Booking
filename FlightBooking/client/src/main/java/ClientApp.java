@@ -14,9 +14,7 @@ public class ClientApp extends Application {
 
     @Override
     public void start(Stage stage) throws Exception {
-        System.out.println("Comecei");
         ClientCommunication client = new ClientCommunication();
-        System.out.println("Oh");
         Frame frame = new Frame(client);
         frame.setStage(stage);
         Scene mainScene = frame.getScene();
