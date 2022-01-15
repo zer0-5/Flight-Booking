@@ -14,7 +14,6 @@ import java.util.UUID;
  */
 public class Route {
 
-
     private static final Logger logger = LogManager.getLogger(Route.class);
 
     /**
@@ -44,9 +43,7 @@ public class Route {
         this.capacity = capacity;
     }
 
-    public static Route deserialize(byte[] bytes) {
-        ByteBuffer bb = ByteBuffer.wrap(bytes);
-
+    public static Route deserialize(ByteBuffer bb) {
         byte[] origin = new byte[bb.getInt()];
         bb.get(origin);
         String originName = new String(origin, StandardCharsets.UTF_8);
@@ -58,8 +55,14 @@ public class Route {
         int capacity = bb.getInt();
 
         Route route= new Route(originName, destinationName, capacity);
-        logger.info("deserialize route: " + route);
+        logger.info("Deserialize route: " + route);
         return route;
+    }
+
+    public static Route deserialize(byte[] bytes) {
+        ByteBuffer bb = ByteBuffer.wrap(bytes);
+
+        return deserialize(bb);
     }
 
     public byte[] serialize() {
@@ -68,11 +71,21 @@ public class Route {
 
         bb.putInt(origin.length());
         bb.put(origin.getBytes(StandardCharsets.UTF_8));
+
         bb.putInt(destination.length());
         bb.put(destination.getBytes(StandardCharsets.UTF_8));
+
         bb.putInt(capacity);
 
         return bb.array();
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        Route route = (Route) o;
+        return capacity == route.capacity && origin.equals(route.origin) && destination.equals(route.destination);
     }
 
     @Override

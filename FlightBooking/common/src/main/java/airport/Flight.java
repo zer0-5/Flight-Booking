@@ -2,12 +2,15 @@ package airport;
 
 import exceptions.FullFlightException;
 
+import java.nio.ByteBuffer;
+import java.nio.charset.StandardCharsets;
 import java.time.LocalDate;
 import java.util.HashSet;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
+import java.util.stream.Collectors;
 
 /**
  * Represents a flight.
@@ -40,12 +43,21 @@ public class Flight {
 
     //private final ReadWriteLock rwReservation ;
     // Get reservations
-    private final Lock readLockReservation;
+    private final Lock readLockReservations;
 
     // Adicionar a reserva depois de ter sido bloqueado.
-    private final Lock writeLockReservation;
+    private final Lock writeLockReservations;
 
+    public Flight(UUID id, Route route, LocalDate date, Set<Reservation> reservations) {
+        this.id = id;
+        this.route = route;
+        this.date = date;
+        this.reservations = new HashSet<>(reservations);
+        ReentrantReadWriteLock rwReservation = new ReentrantReadWriteLock();
+        this.readLockReservations = rwReservation.readLock();
+        this.writeLockReservations = rwReservation.writeLock();
 
+    }
     /**
      * Constructor of the flight.
      *
@@ -58,8 +70,8 @@ public class Flight {
         this.date = date;
         this.reservations = new HashSet<>();
         ReentrantReadWriteLock rwReservation = new ReentrantReadWriteLock();
-        this.readLockReservation = rwReservation.readLock();
-        this.writeLockReservation = rwReservation.writeLock();
+        this.readLockReservations = rwReservation.readLock();
+        this.writeLockReservations = rwReservation.writeLock();
     }
 
     /**
@@ -71,12 +83,12 @@ public class Flight {
      */
     public boolean addReservation(Reservation reservation) throws FullFlightException {
         try {
-            writeLockReservation.lock();
+            writeLockReservations.lock();
             if (route.capacity > reservations.size())
                 return this.reservations.add(reservation);
             throw new FullFlightException();
-        }finally{
-            writeLockReservation.unlock();
+        } finally {
+            writeLockReservations.unlock();
         }
     }
 
@@ -88,10 +100,10 @@ public class Flight {
      */
     public boolean removeReservation(Reservation reservation) {
         try {
-            writeLockReservation.lock();
+            writeLockReservations.lock();
             return this.reservations.remove(reservation);
         } finally {
-            writeLockReservation.unlock();
+            writeLockReservations.unlock();
         }
     }
 
@@ -101,12 +113,11 @@ public class Flight {
      * @return reservation's ids
      */
     public Set<Reservation> getReservations() {
-        try{
-            readLockReservation.lock();
+        try {
+            readLockReservations.lock();
             return new HashSet<>(reservations);
-        }
-        finally{
-            readLockReservation.unlock();
+        } finally {
+            readLockReservations.unlock();
         }
     }
 
@@ -117,38 +128,100 @@ public class Flight {
      */
     public boolean seatAvailable() {
         try {
-            readLockReservation.lock();
+            readLockReservations.lock();
             return route.capacity > reservations.size();
         } finally {
-            readLockReservation.unlock();
+            readLockReservations.unlock();
         }
     }
 
     public void cancelFlight() {
         try {
-            writeLockReservation.lock();
+            writeLockReservations.lock();
             for (Reservation reservation : reservations) {
-                reservation.cancelReservation();
+                reservation.cancelReservation(id);
             }
         } finally {
-            writeLockReservation.unlock();
+            writeLockReservations.unlock();
         }
     }
 
     public void unlock() {
-        writeLockReservation.unlock();
+        writeLockReservations.unlock();
     }
 
     public void lock() {
-        writeLockReservation.lock();
+        writeLockReservations.lock();
     }
 
     @Override
     public String toString() {
-        return "Flight{" +
-                "Day =" + this.date.toString() +
-                "\nroute from =" + route.origin +
-                "to =" + route.destination +
-                '}';
+        return "day=" + this.date.toString() +
+                " route=" + route.origin +
+                " to=" + route.destination +
+                " reservation id's=" + this.reservations.stream().map(rev -> rev.id).toList();
+    }
+
+    public byte[] serialize() {
+        byte[] id = this.id.toString().getBytes(StandardCharsets.UTF_8);
+        byte[] route = this.route.serialize();
+        String date = this.date.toString();
+        ByteBuffer bb = ByteBuffer.allocate(
+                Integer.BYTES + id.length + route.length + Integer.BYTES + date.length() +
+                        Integer.BYTES + reservations.size() * 36 // UUID size
+        );
+
+        // Id
+        bb.putInt(id.length);
+        bb.put(id);
+
+        // Route
+        bb.put(route);
+
+        // LocalDate
+        bb.putInt(date.length());
+        bb.put(date.getBytes(StandardCharsets.UTF_8));
+
+        bb.putInt(this.reservations.size());
+        for (Reservation reservation : this.reservations) {
+            UUID reservationId = reservation.id;
+            byte[] reservationIdByte = reservationId.toString().getBytes(StandardCharsets.UTF_8);
+
+            bb.put(reservationIdByte);
+        }
+
+        return bb.array();
+    }
+
+    public static Flight deserialize(ByteBuffer bb) {
+        // Id
+        byte[] id = new byte[bb.getInt()];
+        bb.get(id);
+
+        // Route
+        Route route = Route.deserialize(bb);
+
+        // LocalDate
+        byte[] dateBuffer = new byte[bb.getInt()];
+        bb.get(dateBuffer);
+        String date = new String(dateBuffer);
+
+        int size = bb.getInt();
+        Set<UUID> reservations = new HashSet<>(size);
+        for (int i = 0; i < size; i++) {
+            byte[] reservationId = new byte[36]; // UUID size
+            bb.get(reservationId);
+
+            reservations.add(UUID.fromString(new String(reservationId, StandardCharsets.UTF_8)));
+        }
+
+        return new Flight(UUID.fromString(new String(id)), route, LocalDate.parse(date),
+                reservations.stream().map(Reservation::new).collect(Collectors.toSet()));
+    }
+
+    public static Flight deserialize(byte[] bytes) {
+        ByteBuffer bb = ByteBuffer.wrap(bytes);
+
+        return deserialize(bb);
     }
 }

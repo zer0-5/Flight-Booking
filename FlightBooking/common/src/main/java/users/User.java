@@ -10,8 +10,9 @@ import java.util.concurrent.locks.ReentrantLock;
 /**
  * User class.
  */
-public abstract class User {
+public class User {
 
+    protected final ReentrantLock lock;
     /**
      * Username.
      */
@@ -25,8 +26,6 @@ public abstract class User {
      */
     private String password;
 
-    protected final ReentrantLock lock;
-
     /**
      * Constructor
      *
@@ -37,6 +36,13 @@ public abstract class User {
         this.password = BCrypt.hashpw(password, BCrypt.gensalt());
         this.username = username;
         this.reservations = new HashSet<>();
+        this.lock = new ReentrantLock();
+    }
+
+    public User(String username) {
+        this.username = username;
+        this.password = null;
+        this.reservations = null;
         this.lock = new ReentrantLock();
     }
 
@@ -105,6 +111,15 @@ public abstract class User {
         try {
             lock.lock();
             return this.reservations.contains(reservation);
+        } finally {
+            lock.unlock();
+        }
+    }
+
+    public Set<UUID> getReservations() {
+        try {
+            lock.lock();
+            return new HashSet<>(reservations);
         } finally {
             lock.unlock();
         }

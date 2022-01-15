@@ -1,20 +1,23 @@
+import airport.PossiblePath;
+import airport.Reservation;
 import airport.Route;
 import connection.TaggedConnection;
+import exceptions.AlreadyLoggedInException;
 import exceptions.NotLoggedInException;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import request.RequestType;
 
 import java.io.IOException;
 import java.net.Socket;
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
+import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Scanner;
-import java.util.stream.Collectors;
 
 import static connection.TaggedConnection.Frame;
+import static java.lang.System.out;
 import static request.RequestType.*;
 
 public class Client implements Runnable {
@@ -37,30 +40,47 @@ public class Client implements Runnable {
         try {
             boolean quit = false;
             while (!quit) {
-                System.out.print(getMenu());
-                int option = Integer.parseInt(in.nextLine());
-                switch (getRequestType(option)) {
-                    case REGISTER -> register();
-                    case LOGIN -> login();
-                    case EXIT -> {
-                        quit();
-                        quit = true;
+                try {
+                    out.print(getMenu());
+                    int option = Integer.parseInt(in.nextLine());
+                    switch (getRequestType(option)) {
+                        case REGISTER -> register();
+                        case LOGIN -> login();
+                        case EXIT -> {
+                            quit();
+                            quit = true;
+                        }
+
+                        case CANCEL_DAY -> cancelDay();
+                        case INSERT_ROUTE -> insertRoute();
+
+                        case GET_ROUTES -> getRoutes();
+                        case GET_RESERVATIONS -> getReservations();
+                        case GET_PATHS_BETWEEN -> getPathsBetween();
+                        case RESERVE -> reserve();
+                        case CANCEL_RESERVATION -> cancelReservation();
                     }
-
-                    case CANCEL_DAY -> cancelDay();
-                    case INSERT_ROUTE -> insertRoute();
-
-                    case GET_ROUTES -> getRoutes();
-                    case RESERVE -> reserve();
-                    case CANCEL_RESERVATION -> cancelReservation();
+                    out.println();
+                } catch (Exception e) {
+                    out.println(e.getMessage() + '\n');
                 }
-                System.out.println();
             }
 
             taggedConnection.close();
+        } catch (NotLoggedInException e) {
+            out.println(e.getMessage());
         } catch (Exception e) {
             e.printStackTrace();
         }
+    }
+
+    private void getReservations() throws IOException {
+        taggedConnection.send(GET_RESERVATIONS.ordinal(), new ArrayList<>());
+
+        Frame response = taggedConnection.receive();
+
+        out.println("Reservations: ");
+        response.data().stream().map(Reservation::deserialize).forEach(out::println);
     }
 
     private void quit() throws IOException {
@@ -71,10 +91,12 @@ public class Client implements Runnable {
      * Sends one request to the server with the username and password.
      * Then, it waits for a response, and handles it.
      */
-    private void login() throws IOException {
-        System.out.println("Insert username: ");
+    private void login() throws IOException, AlreadyLoggedInException {
+        if (logged_in) throw new AlreadyLoggedInException();
+
+        out.print("Insert username: ");
         String username = in.nextLine();
-        System.out.println("Insert password: ");
+        out.print("Insert password: ");
         String password = in.nextLine();
 
         List<byte[]> args = new ArrayList<>();
@@ -86,15 +108,62 @@ public class Client implements Runnable {
         Frame response = taggedConnection.receive();
 
         if (checkError(response)) printError(response);
-        else logged_in = true;
+        else {
+            out.println("Logged in!");
+            logged_in = true;
+        }
     }
 
-    private void cancelReservation() {
-        // TODO:
+    private void cancelReservation() throws NotLoggedInException, IOException {
+        if (!logged_in) throw new NotLoggedInException();
+
+        out.print("Insert the id of the reservation: ");
+        String uuid = in.nextLine();
+
+        List<byte[]> list = new ArrayList<>();
+        list.add(uuid.getBytes(StandardCharsets.UTF_8));
+        taggedConnection.send(CANCEL_RESERVATION.ordinal(), list);
+
+        Frame response = taggedConnection.receive();
+
+        if (checkError(response)) printError(response);
+        else {
+            out.println("Cancel reservation with success!");
+            out.println(Reservation.deserialize(response.data().get(0)));
+        }
     }
 
-    private void reserve() {
-        // TODO:
+    private void reserve() throws NotLoggedInException, IOException {
+        if (!logged_in) throw new NotLoggedInException();
+
+        List<byte[]> list = new ArrayList<>();
+
+        out.print("Insert the number of the cities: "); // TODO: Melhorar a mensagem disto
+        int num = Integer.parseInt(in.nextLine());
+
+        for (int i = 0; i < num; i++) {
+            out.print("Please insert the next city: ");
+            String city = in.nextLine();
+            list.add(city.getBytes(StandardCharsets.UTF_8));
+        }
+
+        out.print("Insert the start date with the following format \"2007-12-03\": ");
+        LocalDate start = LocalDate.parse(in.nextLine());
+        list.add(start.toString().getBytes(StandardCharsets.UTF_8));
+
+        out.print("Insert the end date with the following format \"2007-12-03\": ");
+        LocalDate end = LocalDate.parse(in.nextLine());
+        list.add(end.toString().getBytes(StandardCharsets.UTF_8));
+
+        taggedConnection.send(RESERVE.ordinal(), list);
+
+        Frame response = taggedConnection.receive();
+
+        if (checkError(response)) printError(response);
+        else {
+            out.println("\nReserve with success!");
+            out.println("Reservation id: " + new String(response.data().get(0), StandardCharsets.UTF_8));
+        }
     }
 
     private void getRoutes() throws NotLoggedInException, IOException {
@@ -108,44 +177,81 @@ public class Client implements Runnable {
         if (checkError(response)) printError(response);
         else {
             logger.info("Get routes with success!");
-            response.data().stream().map(Route::deserialize).toList().forEach(System.out::println);
+            response.data().stream().map(Route::deserialize).forEach(out::println);
         }
-        // TODO:
+    }
+
+    private void getPathsBetween() throws NotLoggedInException, IOException {
+        if (!logged_in) throw new NotLoggedInException();
+
+        out.print("Insert origin: ");
+        String origin = in.nextLine();
+        out.print("Insert destination: ");
+        String destination = in.nextLine();
+
+        List<byte[]> args = new ArrayList<>();
+        args.add(origin.getBytes(StandardCharsets.UTF_8));
+        args.add(destination.getBytes(StandardCharsets.UTF_8));
+        taggedConnection.send(GET_PATHS_BETWEEN.ordinal(), args);
+
+        Frame response = taggedConnection.receive();
+
+        if (checkError(response)) printError(response);
+        else {
+            logger.info("Get Possible Path with success!");
+            response.data().stream().map(PossiblePath::deserialize).forEach(e-> out.println(e.toStringPretty("")));
+        }
     }
 
     private void insertRoute() throws IOException, NotLoggedInException {
         if (!logged_in) throw new NotLoggedInException();
 
-        System.out.println("Insert origin route: ");
+        out.print("Insert origin route: ");
         String origin = in.nextLine();
 
-        System.out.println("Insert destiny route: ");
+        out.print("Insert destiny route: ");
         String destiny = in.nextLine();
 
-        System.out.println("Insert capacity of the route: ");
+        out.print("Insert capacity of the route: ");
         int capacity = Integer.parseInt(in.nextLine());
 
         List<byte[]> list = new ArrayList<>();
+
         list.add(origin.getBytes(StandardCharsets.UTF_8));
         list.add(destiny.getBytes(StandardCharsets.UTF_8));
         list.add(ByteBuffer.allocate(Integer.BYTES).putInt(capacity).array());
+
         taggedConnection.send(INSERT_ROUTE.ordinal(), list);
 
         Frame response = taggedConnection.receive();
 
         if (checkError(response)) printError(response);
-        else System.out.println("Route successfully inserted!");
+        else out.println("Route successfully inserted!");
     }
 
-    private void cancelDay() {
-        // TODO:
+    private void cancelDay() throws IOException, NotLoggedInException {
+        if (!logged_in) throw new NotLoggedInException();
+        List<byte[]> list = new ArrayList<>();
+
+        out.print("Insert the end date with the following format \"2007-12-03\": ");
+        LocalDate day = LocalDate.parse(in.nextLine());
+        list.add(day.toString().getBytes(StandardCharsets.UTF_8));
+
+        taggedConnection.send(CANCEL_DAY.ordinal(), list);
+
+        Frame response = taggedConnection.receive();
+
+        if (checkError(response)) printError(response);
+        else out.println("Day successfully cancelled!");
     }
 
-    private void register() throws IOException {
-        System.out.println("Insert username: ");
+    private void register() throws IOException, AlreadyLoggedInException {
+        if (logged_in) throw new AlreadyLoggedInException();
+
+        out.print("Insert username: ");
         String username = in.nextLine();
 
-        System.out.println("Insert password: ");
+        out.print("Insert password: ");
         String password = in.nextLine();
 
         List<byte[]> list = new ArrayList<>();
@@ -157,7 +263,7 @@ public class Client implements Runnable {
         Frame response = taggedConnection.receive();
 
         if (checkError(response)) printError(response);
-        else System.out.println("Account successfully registered!");
+        else out.println("Account successfully registered!");
     }
 
     private boolean checkError(Frame frame) {
@@ -165,11 +271,12 @@ public class Client implements Runnable {
     }
 
     private void printError(Frame frame) {
-        System.out.println("ERROR!");
+        // out.println("ERROR!");
+        out.println();
         for (int i = 1; i < frame.data().size(); i++) {
-            System.out.println(new String(frame.data().get(i)));
+            out.println(new String(frame.data().get(i)));
         }
-        System.out.println("Error with the request: " + frame.data().stream().map(String::new).collect(Collectors.joining(" ")));
+        // out.println("Error with the request: " + frame.data().stream().map(String::new).collect(Collectors.joining(" ")));
     }
 
 }

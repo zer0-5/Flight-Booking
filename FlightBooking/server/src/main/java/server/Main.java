@@ -1,16 +1,19 @@
 package server;
 
 
-import exceptions.RouteAlreadyExistsException;
-import exceptions.RouteDoesntExistException;
-import exceptions.UsernameAlreadyExistsException;
+import exceptions.*;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import system.AirportSystem;
 import system.IAirportSystem;
+import users.User;
 
 import java.io.IOException;
 import java.net.ServerSocket;
+import java.time.LocalDate;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.UUID;
 import java.util.concurrent.Executors;
 
 public class Main {
@@ -20,13 +23,28 @@ public class Main {
     @SuppressWarnings({"CanBeFinal", "FieldMayBeFinal", "FieldCanBeLocal"})
     private static boolean running = true;
 
-    public static void main(String[] args) throws IOException, UsernameAlreadyExistsException, RouteDoesntExistException, RouteAlreadyExistsException {
+    private static IAirportSystem initState() throws UsernameAlreadyExistsException, RouteDoesntExistException, RouteAlreadyExistsException, BookingFlightsNotPossibleException, UserNotFoundException, InvalidDateException {
         IAirportSystem iAirportSystem = new AirportSystem();
 
         iAirportSystem.registerAdmin("admin", "admin");
-        iAirportSystem.registerClient("1", "1");
+        User user =  iAirportSystem.registerClient("1", "1");
+        logger.info("Client with success with id: " + user.getUsername());
         iAirportSystem.addRoute("Porto", "Lisbon", 200);
+        iAirportSystem.addRoute("Lisbon", "London", 200);
+        iAirportSystem.addRoute("London", "Faro", 200);
 
+        List<String> cities = new ArrayList<>();
+        cities.add("Porto");
+        cities.add("Lisbon");
+        cities.add("London");
+
+        UUID id = iAirportSystem.reserveFlight(user.getUsername(), cities, LocalDate.now(), LocalDate.now().plusDays(10));
+        logger.info("Reservation with success with id: " + id);
+        return iAirportSystem;
+    }
+
+    public static void main(String[] args) throws IOException, UsernameAlreadyExistsException, RouteDoesntExistException, RouteAlreadyExistsException, BookingFlightsNotPossibleException, UserNotFoundException, InvalidDateException {
+        IAirportSystem iAirportSystem = initState();
 
         try (ServerSocket serverSocket = new ServerSocket(PORT)) {
             logger.info("ServerSocket starting...");

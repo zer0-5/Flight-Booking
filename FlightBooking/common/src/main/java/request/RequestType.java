@@ -12,6 +12,8 @@ public enum RequestType {
 
     // Client commands
     GET_ROUTES,
+    GET_RESERVATIONS,
+    GET_PATHS_BETWEEN,
     RESERVE,
     CANCEL_RESERVATION,
     ;

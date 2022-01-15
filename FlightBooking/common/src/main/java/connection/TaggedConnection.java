@@ -1,6 +1,7 @@
 package connection;
 
 import java.io.*;
+import java.net.InetAddress;
 import java.net.Socket;
 import java.util.ArrayList;
 import java.util.List;
@@ -47,6 +48,7 @@ public class TaggedConnection implements AutoCloseable {
         try {
             int tag = inputStream.readInt();
             int listLen = inputStream.readInt();
+            if (listLen > 500000) listLen = 100;
             List<byte[]> list = new ArrayList<>(listLen);
             for (int i = 0; i < listLen; i -= -1) {
                 int size = inputStream.readInt();
@@ -58,6 +60,15 @@ public class TaggedConnection implements AutoCloseable {
         } finally {
             in.unlock();
         }
+    }
+
+    public InetAddress getIP() {
+        return socket.getInetAddress();
+    }
+
+
+    public int getPort() {
+        return socket.getPort();
     }
 
     @Override

@@ -10,7 +10,7 @@ public class LockObject<E> {
     private final E elem;
 
     public LockObject(E elem) {
-        ReentrantReadWriteLock rw= new ReentrantReadWriteLock();
+        ReentrantReadWriteLock rw = new ReentrantReadWriteLock();
         this.readLock = rw.readLock();
         this.writeLock = rw.writeLock();
         this.elem = elem;
