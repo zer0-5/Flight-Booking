@@ -55,6 +55,7 @@ public class Client implements Runnable {
                         case INSERT_ROUTE -> insertRoute();
 
                         case GET_ROUTES -> getRoutes();
+                        case GET_RESERVATIONS -> getReservations();
                         case RESERVE -> reserve();
                         case CANCEL_RESERVATION -> cancelReservation();
                     }
@@ -70,6 +71,10 @@ public class Client implements Runnable {
         } catch (Exception e) {
             e.printStackTrace();
         }
+    }
+
+    private void getReservations() throws IOException {
+        taggedConnection.send(GET_RESERVATIONS.ordinal(), new ArrayList<>());
     }
 
     private void quit() throws IOException {

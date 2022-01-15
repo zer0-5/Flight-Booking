@@ -16,9 +16,7 @@ import java.net.Socket;
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 import java.time.LocalDate;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.UUID;
+import java.util.*;
 import java.util.stream.Collectors;
 
 import static request.RequestType.*;
@@ -59,6 +57,7 @@ public class ClientHandler implements Runnable {
                         case INSERT_ROUTE -> insertRoute(data);
 
                         case GET_ROUTES -> getRoutes(data);
+                        case GET_RESERVATIONS -> getReservations();
                         case RESERVE -> reserve(data);
                         case CANCEL_RESERVATION -> cancelReservation(data);
                     }
@@ -87,6 +86,13 @@ public class ClientHandler implements Runnable {
             logger.info("Error closing the connection!");
         }
 
+    }
+
+    private void getReservations() throws IOException {
+        //Set<Reservation> reservations = airportSystem.;
+        Set<Reservation> reservations = new HashSet<>();
+
+        sendOk(CANCEL_RESERVATION.ordinal(), reservations.stream().map(Reservation::serialize).collect(Collectors.toList()));
     }
 
     private void cancelReservation(List<byte[]> data) throws ReservationNotFoundException,
