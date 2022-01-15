@@ -159,7 +159,8 @@ public class Flight {
     public String toString() {
         return "day=" + this.date.toString() +
                 " route=" + route.origin +
-                " to=" + route.destination + this.reservations.stream().map(rev -> rev.id);
+                " to=" + route.destination +
+                " reservation id's=" + this.reservations.stream().map(rev -> rev.id).toList();
     }
 
     public byte[] serialize() {

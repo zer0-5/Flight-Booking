@@ -165,7 +165,9 @@ public class Reservation {
     @Override
     public String toString() {
         StringBuilder stringBuilder = new StringBuilder();
-        stringBuilder.append("Reservation flights: ");
+        stringBuilder.append("Flight id=").append(id);
+        stringBuilder.append(" user_username=").append(client.getUsername());
+        stringBuilder.append(" reservation flights=");
         Iterator<Flight> flights = this.flights.iterator();
 
         for (int i = 0; i < this.flights.size() - 1; i++) {
