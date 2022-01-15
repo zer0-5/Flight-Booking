@@ -75,38 +75,6 @@ public class Flight {
         this.writeLockReservation = rwReservation.writeLock();
     }
 
-    public static Flight deserialize(ByteBuffer bb) {
-        // Id
-        byte[] id = new byte[bb.getInt()];
-        bb.get(id);
-
-        // Route
-        Route route = Route.deserialize(bb);
-
-        // LocalDate
-        byte[] dateBuffer = new byte[bb.getInt()];
-        bb.get(dateBuffer);
-        String date = new String(dateBuffer);
-
-        int size = bb.getInt();
-        Set<UUID> reservations = new HashSet<>(size);
-        for (int i = 0; i < size; i++) {
-            byte[] reservationId = new byte[36]; // UUID size
-            bb.get(reservationId);
-
-            reservations.add(UUID.fromString(new String(reservationId, StandardCharsets.UTF_8)));
-        }
-
-        return new Flight(UUID.fromString(new String(id)), route, LocalDate.parse(date),
-                reservations.stream().map(Reservation::new).collect(Collectors.toSet()));
-    }
-
-    public static Flight deserialize(byte[] bytes) {
-        ByteBuffer bb = ByteBuffer.wrap(bytes);
-
-        return deserialize(bb);
-    }
-
     /**
      * Adds a reservation to this flight.
      *
@@ -189,9 +157,9 @@ public class Flight {
 
     @Override
     public String toString() {
-        return "Day=" + this.date.toString() +
+        return "day=" + this.date.toString() +
                 " route=" + route.origin +
-                " to=" + route.destination;
+                " to=" + route.destination + this.reservations.stream().map(rev -> rev.id);
     }
 
     public byte[] serialize() {
@@ -223,5 +191,37 @@ public class Flight {
         }
 
         return bb.array();
+    }
+
+    public static Flight deserialize(ByteBuffer bb) {
+        // Id
+        byte[] id = new byte[bb.getInt()];
+        bb.get(id);
+
+        // Route
+        Route route = Route.deserialize(bb);
+
+        // LocalDate
+        byte[] dateBuffer = new byte[bb.getInt()];
+        bb.get(dateBuffer);
+        String date = new String(dateBuffer);
+
+        int size = bb.getInt();
+        Set<UUID> reservations = new HashSet<>(size);
+        for (int i = 0; i < size; i++) {
+            byte[] reservationId = new byte[36]; // UUID size
+            bb.get(reservationId);
+
+            reservations.add(UUID.fromString(new String(reservationId, StandardCharsets.UTF_8)));
+        }
+
+        return new Flight(UUID.fromString(new String(id)), route, LocalDate.parse(date),
+                reservations.stream().map(Reservation::new).collect(Collectors.toSet()));
+    }
+
+    public static Flight deserialize(byte[] bytes) {
+        ByteBuffer bb = ByteBuffer.wrap(bytes);
+
+        return deserialize(bb);
     }
 }

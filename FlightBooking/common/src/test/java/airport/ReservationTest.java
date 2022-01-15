@@ -32,7 +32,7 @@ public class ReservationTest {
         User user3 = new Client("3", "3");
 
         Route route1 = new Route("London", "Paris", 200);
-        Route route2 = new Route("Lisbon", "Porto", 100);
+        Route route2 = new Route("Paris", "London", 100);
 
         LocalDate localDate1 = LocalDate.of(1, 1, 1);
         LocalDate localDate2 = LocalDate.of(2, 2, 2);
@@ -46,6 +46,12 @@ public class ReservationTest {
                 Arguments.of(new Reservation(user2, flights)),
                 Arguments.of(new Reservation(user3, flights))
         );
+    }
+
+    public static boolean equals(Reservation reservation1, Reservation reservation2) {
+        return reservation1.id.equals(reservation2.id) &&
+                reservation1.getClient().getUsername().equals(reservation2.getClient().getUsername()) &&
+                reservation1.getFlights().equals(reservation2.getFlights());
     }
 
     @ParameterizedTest

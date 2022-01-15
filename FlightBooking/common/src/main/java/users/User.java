@@ -2,8 +2,6 @@ package users;
 
 import encryption.BCrypt;
 
-import java.nio.ByteBuffer;
-import java.nio.charset.StandardCharsets;
 import java.util.HashSet;
 import java.util.Set;
 import java.util.UUID;
@@ -12,7 +10,7 @@ import java.util.concurrent.locks.ReentrantLock;
 /**
  * User class.
  */
-public abstract class User {
+public class User {
 
     protected final ReentrantLock lock;
     /**
@@ -41,21 +39,11 @@ public abstract class User {
         this.lock = new ReentrantLock();
     }
 
-    public static User deserialize(byte[] bytes) {
-        ByteBuffer bb = ByteBuffer.wrap(bytes);
-
-        byte[] username = new byte[bb.getInt()];
-        bb.get(username);
-
-        byte[] password = new byte[bb.getInt()];
-        bb.get(password);
-
-        // TODO: Mudar isto para dar para o Admin tbm
-        return new Client(new String(username, StandardCharsets.UTF_8), new String(password, StandardCharsets.UTF_8));
-    }
-
-    public static User deserialize(ByteBuffer bb) {
-        return null;
+    public User(String username) {
+        this.username = username;
+        this.password = null;
+        this.reservations = null;
+        this.lock = new ReentrantLock();
     }
 
     /**
@@ -141,20 +129,4 @@ public abstract class User {
             lock.unlock();
         }
     }
-
-    public byte[] serialize() {
-        var username = this.username.getBytes(StandardCharsets.UTF_8);
-        // var reservations = this.reservations;
-        // TODO: Falta implementar aqui a serialização das reservations!
-        var password = this.password.getBytes(StandardCharsets.UTF_8);
-
-        ByteBuffer bb = ByteBuffer.allocate(Integer.BYTES + username.length + Integer.BYTES + password.length);
-        bb.putInt(username.length);
-        bb.put(username);
-        bb.putInt(password.length);
-        bb.put(password);
-
-        return bb.array();
-    }
-
 }

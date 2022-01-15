@@ -67,6 +67,23 @@ public class Reservation {
         this.writeLockFlights = null;
     }
 
+    public Reservation(UUID id, String username, Set<Flight> flights) {
+        this.id = id;
+        this.client = new User(username);
+        this.flights = new HashSet<>(flights);
+        ReentrantReadWriteLock rwFlights = new ReentrantReadWriteLock();
+        this.readLockFlights = rwFlights.readLock();
+        this.writeLockFlights = rwFlights.writeLock();
+    }
+
+    public User getClient() {
+        return client;
+    }
+
+    public Set<Flight> getFlights() {
+        return new HashSet<>(flights);
+    }
+
     /**
      * Cancel the reservation on all flights involved in the given reservation
      *
@@ -95,17 +112,18 @@ public class Reservation {
 
     public byte[] serialize() {
         var uuid = id.toString().getBytes(StandardCharsets.UTF_8);
-        var user = client.serialize();
+        byte[] user = client.getUsername().getBytes(StandardCharsets.UTF_8);
         var flights = this.flights.stream().map(Flight::serialize).collect(Collectors.toSet());
         ByteBuffer bb = ByteBuffer.allocate(
                 Integer.BYTES + uuid.length +
                 Integer.BYTES + user.length +
-                Integer.BYTES + Integer.BYTES * flights.size() + flights.stream().mapToInt(arr -> arr.length).sum()
+                Integer.BYTES + flights.stream().mapToInt(arr -> arr.length).sum()
         );
 
         bb.putInt(uuid.length);
         bb.put(uuid);
 
+        bb.putInt(user.length);
         bb.put(user);
 
         bb.putInt(flights.size());
@@ -117,14 +135,15 @@ public class Reservation {
     }
 
     public static Reservation deserialize(byte[] bytes) {
-        // TODO: Alterar isto de Flight para Reservation!
         ByteBuffer bb = ByteBuffer.wrap(bytes);
 
         byte[] idB = new byte[bb.getInt()];
         bb.get(idB);
+        var id = UUID.fromString(new String(idB, StandardCharsets.UTF_8));
 
-        var client = User.deserialize(bb);
-        var arr = bb.array();
+        byte[] usernameB = new byte[bb.getInt()];
+        bb.get(usernameB);
+        String username = new String(usernameB, StandardCharsets.UTF_8);
 
         int size = bb.getInt();
         Set<Flight> flights = new HashSet<>(size);
@@ -132,7 +151,7 @@ public class Reservation {
             Flight flight = Flight.deserialize(bb);
             flights.add(flight);
         }
-        return new Reservation(UUID.fromString(new String(idB, StandardCharsets.UTF_8)), client, flights);
+        return new Reservation(id, username, flights);
     }
 
     @Override
@@ -150,9 +169,9 @@ public class Reservation {
         Iterator<Flight> flights = this.flights.iterator();
 
         for (int i = 0; i < this.flights.size() - 1; i++) {
-            stringBuilder.append(flights.next()).append("->");
+            stringBuilder.append("[").append(flights.next()).append("] -> ");
         }
-        stringBuilder.append(flights.next());
+        stringBuilder.append("[").append(flights.next()).append("]");
 
         return stringBuilder.toString();
     }

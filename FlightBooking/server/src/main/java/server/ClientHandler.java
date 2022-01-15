@@ -114,7 +114,6 @@ public class ClientHandler implements Runnable {
         list.add(id.toString().getBytes(StandardCharsets.UTF_8));
 
         sendOk(RESERVE.ordinal(), list);
-        // TODO:
     }
 
     private void getRoutes(List<byte[]> data) throws IOException {
@@ -134,9 +133,6 @@ public class ClientHandler implements Runnable {
         var reservations = airportSystem.cancelDay(LocalDate.parse(new String(data.get(0))));
 
         sendOk(CANCEL_DAY.ordinal(), reservations.stream().map(Reservation::serialize).collect(Collectors.toList()));
-
-        // TODO:
-        //airportSystem.cancelDay()
     }
 
     private void register(List<byte[]> data) throws UsernameAlreadyExistsException, IOException, AlreadyLoggedInException {
