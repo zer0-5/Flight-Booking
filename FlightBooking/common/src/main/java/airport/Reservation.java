@@ -168,11 +168,10 @@ public class Reservation {
     @Override
     public String toString() {
         StringBuilder res = new StringBuilder();
-        res.append("Reservation{" +
-                "client=" + client +
-                ", flights=");
-        for (Flight one : flights)
-            res.append(flights);
+        res.append("id=").append(this.id).append(" client=").append(client).append(" flights=");
+
+        for (Flight flight : flights) res.append(flight);
+
         return res.toString();
     }
 }
