@@ -10,6 +10,8 @@ import users.Admin;
 import users.Client;
 import users.User;
 
+import java.nio.ByteBuffer;
+import java.nio.charset.StandardCharsets;
 import java.time.LocalDate;
 import java.util.*;
 import java.util.concurrent.locks.Lock;
@@ -727,36 +729,36 @@ public class AirportSystem implements IAirportSystem {
 
     }
 
-    //public static void main(String[] args) throws RouteAlreadyExistsException, RouteDoesntExistException {
-    //    system.AirportSystem air = new system.AirportSystem();
-    //    air.addRoute("a", "b", 1);
-    //    air.addRoute("a", "c", 1);
-    //    air.addRoute("c", "dest", 1);
-    //    air.addRoute("b", "dest", 1);
-    //    air.addRoute("b", "d", 1);
-    //    air.addRoute("d", "dest", 1);
-    //    air.addRoute("a", "dest", 1);
-    //    air.addRoute("a", "d", 1);
-    //    air.addRoute("f", "o", 1);
+    public static void main(String[] args) throws RouteAlreadyExistsException, RouteDoesntExistException {
+        AirportSystem air = new AirportSystem();
+        air.addRoute("a", "b", 1);
+        air.addRoute("a", "c", 1);
+        air.addRoute("c", "dest", 1);
+        air.addRoute("b", "dest", 1);
+        air.addRoute("b", "d", 1);
+        air.addRoute("d", "dest", 1);
+        air.addRoute("a", "dest", 1);
+        air.addRoute("a", "d", 1);
+        air.addRoute("f", "o", 1);
 
-    //    System.out.println("Conexões:");
-    //    try {
+        System.out.println("Conexões:");
+        try {
 
-    //        PossiblePath p1 = air.getPathsBetween("a", "dest");
-    //        System.out.println("BEFORE P1");
-    //        System.out.println(p1.toStringPretty(""));
-    //        PossiblePath p1_ = PossiblePath.deserialize(p1.serialize());
+            PossiblePath p1 = air.getPathsBetween("a", "dest");
+            System.out.println("BEFORE P1");
+            System.out.println(p1.toStringPretty(""));
+            PossiblePath p1_ = PossiblePath.deserialize(p1.serialize());
 
-    //        System.out.println("AFTER P1");
-    //        System.out.println(p1_.toStringPretty(""));
+            System.out.println("AFTER P1");
+            System.out.println(p1_.toStringPretty(""));
 
-    //        PossiblePath p2 = air.getPathsBetween("a", "dest");
-    //        System.out.println(p2.toString());
-    //        PossiblePath p3 = air.getPathsBetween("dest", "dest2");
-    //        System.out.println(p3.toStringPretty(""));
-    //    }
-    //    catch (RouteDoesntExistException e){}
-    //}
+            PossiblePath p2 = air.getPathsBetween("a", "dest");
+            System.out.println(p2.toString());
+            PossiblePath p3 = air.getPathsBetween("dest", "dest2");
+            System.out.println(p3.toStringPretty(""));
+        }
+        catch (RouteDoesntExistException e){}
+    }
 
     /**
      * Used in tests to verify if all routes were inserted.

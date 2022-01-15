@@ -25,31 +25,6 @@ public class PossiblePath {
         //}
     }
 
-    //FIXME
-    public static PossiblePath deserialize(byte[] bytes) {
-        System.out.println("Entrei aqui");
-        System.out.println(bytes.length);
-        System.out.println(":::::" + new String(bytes));
-        ByteBuffer bb = ByteBuffer.wrap(bytes);
-
-        byte[] thisCityBytes = new byte[bb.getInt()];
-        bb.get(thisCityBytes);
-        String thisCity = new String(thisCityBytes, StandardCharsets.UTF_8);
-        System.out.println("city " + thisCity);
-        int size = bb.getInt();
-        PossiblePath possiblePath = new PossiblePath(size == 0, thisCity);
-
-        List<PossiblePath> list = new ArrayList<>();
-        for (int i = 0; i < size; i++) {
-            list.add(deserialize(bytes));
-        }
-
-        for (PossiblePath path : list)
-            possiblePath.addPossiblePath(path);
-        //logger.info("deserialize route: " + possiblePath);
-        return possiblePath;
-    }
-
     public void addPossiblePath(PossiblePath toInsert) {
         connections.add(toInsert);
     }
@@ -58,6 +33,53 @@ public class PossiblePath {
         return connections.size();
     }
 
+    public static PossiblePath deserialize(byte[] bytes) {
+        //System.out.println("Leu " + bytes.length + " bytes.");
+        return deserialize(ByteBuffer.wrap(bytes));
+    }
+
+    private static PossiblePath deserialize(ByteBuffer bb) {
+        int sizeNameCity = bb.getInt();
+        byte[] thisCityBytes = new byte[sizeNameCity];
+        bb.get(thisCityBytes);
+        String thisCityDes = new String(thisCityBytes);
+        int size = bb.getInt();
+        PossiblePath possiblePath = new PossiblePath(size == 0, thisCityDes);
+        //if (true) return new PossiblePath(true, "false");
+
+        List<PossiblePath> list = new ArrayList<>();
+        for (int i = 0; i < size; i++ ) {
+            list.add(deserialize(bb));
+        }
+        for (PossiblePath path : list)
+            possiblePath.addPossiblePath(path);
+        //logger.info("deserialize route: " + possiblePath);
+        return possiblePath;
+    }
+
+    /**
+     * @return
+     */
+    public byte[] serialize() {
+        byte[] cityToByte =thisCity.getBytes();
+        ByteBuffer bb = ByteBuffer.allocate( Integer.BYTES + cityToByte.length + Integer.BYTES);
+
+        bb.putInt(cityToByte.length);
+        bb.put(cityToByte);
+
+        bb.putInt(connections.size());
+
+        for (PossiblePath possiblePath : connections)  {
+            byte[] elem = possiblePath.serialize();
+            ByteBuffer newBuffer = ByteBuffer.allocate(bb.capacity() + elem.length);
+            newBuffer.put(bb.array());
+            newBuffer.put(elem);
+
+            bb = newBuffer;
+        }
+        //System.out.println(bb);
+        return bb.array();
+    }
     @Override
     public String toString() {
         if (isDestiny) return " [Destination " + thisCity + "] ";
@@ -78,29 +100,5 @@ public class PossiblePath {
             res.append(connection.toStringPretty(header));
         }
         return res.toString();
-    }
-
-    //FIXME
-    public byte[] serialize() {
-        System.out.println("Aqui");
-        ByteBuffer bb = ByteBuffer.allocate(Integer.BYTES + thisCity.length() + Integer.BYTES);
-
-        bb.putInt(thisCity.length());
-        bb.put(thisCity.getBytes(StandardCharsets.UTF_8));
-
-        //bb.putInt(0);
-        bb.putInt(connections.size());
-        System.out.println("ANTES::" + bb);
-
-        for (PossiblePath possiblePath : connections) {
-            byte[] elem = possiblePath.serialize();
-            ByteBuffer newBuffer = ByteBuffer.allocate(bb.capacity() + elem.length);
-            newBuffer.put(bb);
-            newBuffer.put(elem);
-            System.out.println("NOVO::" + newBuffer);
-            bb = newBuffer;
-        }
-        //System.out.println(bb);
-        return bb.array();
     }
 }
