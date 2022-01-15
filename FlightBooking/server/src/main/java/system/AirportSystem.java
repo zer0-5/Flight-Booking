@@ -10,8 +10,6 @@ import users.Admin;
 import users.Client;
 import users.User;
 
-import java.nio.ByteBuffer;
-import java.nio.charset.StandardCharsets;
 import java.time.LocalDate;
 import java.util.*;
 import java.util.concurrent.locks.Lock;
@@ -701,8 +699,8 @@ public class AirportSystem implements IAirportSystem {
             if (destinationCitiesFrom(from.toUpperCase()).size() == 0) throw new RouteDoesntExistException();
 
             PossiblePath possiblePath = getPathsBetweenAux(from.toUpperCase(), dest.toUpperCase(), 4);
-            if (possiblePath == null )
-                throw new RouteDoesntExistException(from,dest);
+            if (possiblePath == null)
+                throw new RouteDoesntExistException(from, dest);
 
             return possiblePath;
         } finally {
@@ -765,8 +763,8 @@ public class AirportSystem implements IAirportSystem {
             System.out.println(p2.toString());
             PossiblePath p3 = air.getPathsBetween("dest", "dest2");
             System.out.println(p3.toStringPretty(""));
+        } catch (RouteDoesntExistException e) {
         }
-        catch (RouteDoesntExistException e){}
     }
 
     /**

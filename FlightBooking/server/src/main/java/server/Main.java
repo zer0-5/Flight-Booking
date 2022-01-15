@@ -27,7 +27,7 @@ public class Main {
         IAirportSystem iAirportSystem = new AirportSystem();
 
         iAirportSystem.registerAdmin("admin", "admin");
-        User user =  iAirportSystem.registerClient("1", "1");
+        User user = iAirportSystem.registerClient("1", "1");
         logger.info("Client with success with id: " + user.getUsername());
         iAirportSystem.addRoute("Porto", "Lisbon", 200);
         iAirportSystem.addRoute("Lisbon", "London", 200);

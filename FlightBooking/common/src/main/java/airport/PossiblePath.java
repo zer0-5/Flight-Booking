@@ -1,7 +1,6 @@
 package airport;
 
 import java.nio.ByteBuffer;
-import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.LinkedList;
 import java.util.List;
@@ -48,7 +47,7 @@ public class PossiblePath {
         //if (true) return new PossiblePath(true, "false");
 
         List<PossiblePath> list = new ArrayList<>();
-        for (int i = 0; i < size; i++ ) {
+        for (int i = 0; i < size; i++) {
             list.add(deserializeAux(bb));
         }
         for (PossiblePath path : list)
@@ -61,15 +60,15 @@ public class PossiblePath {
      * @return
      */
     public byte[] serialize() {
-        byte[] cityToByte =thisCity.getBytes();
-        ByteBuffer bb = ByteBuffer.allocate( Integer.BYTES + cityToByte.length + Integer.BYTES);
+        byte[] cityToByte = thisCity.getBytes();
+        ByteBuffer bb = ByteBuffer.allocate(Integer.BYTES + cityToByte.length + Integer.BYTES);
 
         bb.putInt(cityToByte.length);
         bb.put(cityToByte);
 
         bb.putInt(connections.size());
 
-        for (PossiblePath possiblePath : connections)  {
+        for (PossiblePath possiblePath : connections) {
             byte[] elem = possiblePath.serialize();
             ByteBuffer newBuffer = ByteBuffer.allocate(bb.capacity() + elem.length);
             newBuffer.put(bb.array());
@@ -86,7 +85,7 @@ public class PossiblePath {
         if (isDestiny) return " [Destination " + thisCity + "] ";
         StringBuilder res = new StringBuilder("airport.PossiblePath{ here: " + thisCity);
         for (PossiblePath connection : connections) {
-            res.append("\n  {" + connection.toString() + "}");
+            res.append("\n  {").append(connection.toString()).append("}");
         }
         return res.toString();
     }

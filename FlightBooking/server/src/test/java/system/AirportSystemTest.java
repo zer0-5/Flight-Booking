@@ -2,7 +2,10 @@ package system;
 
 import airport.Route;
 import exceptions.*;
-import org.junit.jupiter.api.*;
+import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.CsvSource;
@@ -19,7 +22,7 @@ import java.util.List;
 import java.util.UUID;
 import java.util.stream.Stream;
 
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.fail;
 
 class AirportSystemTest {
 
@@ -92,6 +95,7 @@ class AirportSystemTest {
         initUser();
         initRoutes_LondonParisLisbon();
     }
+
     @DisplayName("Add Route")
     @ParameterizedTest
     @CsvSource({"Lisbon,London,30", "London,Paris,1", "Lisbon,Paris,23"})
@@ -513,8 +517,6 @@ class AirportSystemTest {
             airportSystem.authenticate(username, password.toUpperCase());
         });
     }
-
-
 
 
 }

@@ -58,6 +58,7 @@ public class Flight {
         this.writeLockReservations = rwReservation.writeLock();
 
     }
+
     /**
      * Constructor of the flight.
      *
