@@ -75,10 +75,21 @@ public class Client implements Runnable {
 
     private void getReservations() throws IOException {
         taggedConnection.send(GET_RESERVATIONS.ordinal(), new ArrayList<>());
+
+        Frame response = taggedConnection.receive();
+
+        response.data().stream().map(Reservation::deserialize).forEach(out::println);
     }
 
     private void quit() throws IOException {
         taggedConnection.send(EXIT.ordinal(), new ArrayList<>());
+
+        Frame response = taggedConnection.receive();
+
+        if (checkError(response)) printError(response);
+        else {
+            out.println(" in!");
+        }
     }
 
     /**
