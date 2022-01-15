@@ -43,10 +43,10 @@ public class Flight {
 
     //private final ReadWriteLock rwReservation ;
     // Get reservations
-    private final Lock readLockReservation;
+    private final Lock readLockReservations;
 
     // Adicionar a reserva depois de ter sido bloqueado.
-    private final Lock writeLockReservation;
+    private final Lock writeLockReservations;
 
     public Flight(UUID id, Route route, LocalDate date, Set<Reservation> reservations) {
         this.id = id;
@@ -54,8 +54,8 @@ public class Flight {
         this.date = date;
         this.reservations = new HashSet<>(reservations);
         ReentrantReadWriteLock rwReservation = new ReentrantReadWriteLock();
-        this.readLockReservation = rwReservation.readLock();
-        this.writeLockReservation = rwReservation.writeLock();
+        this.readLockReservations = rwReservation.readLock();
+        this.writeLockReservations = rwReservation.writeLock();
 
     }
     /**
@@ -70,8 +70,8 @@ public class Flight {
         this.date = date;
         this.reservations = new HashSet<>();
         ReentrantReadWriteLock rwReservation = new ReentrantReadWriteLock();
-        this.readLockReservation = rwReservation.readLock();
-        this.writeLockReservation = rwReservation.writeLock();
+        this.readLockReservations = rwReservation.readLock();
+        this.writeLockReservations = rwReservation.writeLock();
     }
 
     /**
@@ -83,12 +83,12 @@ public class Flight {
      */
     public boolean addReservation(Reservation reservation) throws FullFlightException {
         try {
-            writeLockReservation.lock();
+            writeLockReservations.lock();
             if (route.capacity > reservations.size())
                 return this.reservations.add(reservation);
             throw new FullFlightException();
         } finally {
-            writeLockReservation.unlock();
+            writeLockReservations.unlock();
         }
     }
 
@@ -100,10 +100,10 @@ public class Flight {
      */
     public boolean removeReservation(Reservation reservation) {
         try {
-            writeLockReservation.lock();
+            writeLockReservations.lock();
             return this.reservations.remove(reservation);
         } finally {
-            writeLockReservation.unlock();
+            writeLockReservations.unlock();
         }
     }
 
@@ -114,10 +114,10 @@ public class Flight {
      */
     public Set<Reservation> getReservations() {
         try {
-            readLockReservation.lock();
+            readLockReservations.lock();
             return new HashSet<>(reservations);
         } finally {
-            readLockReservation.unlock();
+            readLockReservations.unlock();
         }
     }
 
@@ -128,30 +128,30 @@ public class Flight {
      */
     public boolean seatAvailable() {
         try {
-            readLockReservation.lock();
+            readLockReservations.lock();
             return route.capacity > reservations.size();
         } finally {
-            readLockReservation.unlock();
+            readLockReservations.unlock();
         }
     }
 
     public void cancelFlight() {
         try {
-            writeLockReservation.lock();
+            writeLockReservations.lock();
             for (Reservation reservation : reservations) {
                 reservation.cancelReservation(id);
             }
         } finally {
-            writeLockReservation.unlock();
+            writeLockReservations.unlock();
         }
     }
 
     public void unlock() {
-        writeLockReservation.unlock();
+        writeLockReservations.unlock();
     }
 
     public void lock() {
-        writeLockReservation.lock();
+        writeLockReservations.lock();
     }
 
     @Override
