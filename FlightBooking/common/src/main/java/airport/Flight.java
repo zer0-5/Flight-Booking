@@ -75,7 +75,7 @@ public class Flight {
             if (route.capacity > reservations.size())
                 return this.reservations.add(reservation);
             throw new FullFlightException();
-        }finally{
+        } finally {
             writeLockReservation.unlock();
         }
     }
@@ -101,11 +101,10 @@ public class Flight {
      * @return reservation's ids
      */
     public Set<Reservation> getReservations() {
-        try{
+        try {
             readLockReservation.lock();
             return new HashSet<>(reservations);
-        }
-        finally{
+        } finally {
             readLockReservation.unlock();
         }
     }

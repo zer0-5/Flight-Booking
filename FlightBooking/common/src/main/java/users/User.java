@@ -12,6 +12,7 @@ import java.util.concurrent.locks.ReentrantLock;
  */
 public abstract class User {
 
+    protected final ReentrantLock lock;
     /**
      * Username.
      */
@@ -24,8 +25,6 @@ public abstract class User {
      * Password.
      */
     private String password;
-
-    protected final ReentrantLock lock;
 
     /**
      * Constructor

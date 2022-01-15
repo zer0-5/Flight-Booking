@@ -66,6 +66,11 @@ public interface IAirportSystem {
      */
     List<Route> getRoutes();
 
+    /**
+     * @param username the name of the user
+     * @return Reservations
+     * @throws UserNotFoundException Invalid username.
+     */
     Set<Reservation> getReservationsFromClient(String username) throws UserNotFoundException;
 
     /**

@@ -6,7 +6,6 @@ import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
-import java.util.concurrent.locks.ReentrantReadWriteLock;
 
 /**
  * Represents the reservation of one or multiple flights.
@@ -47,7 +46,6 @@ public class Reservation {
 
     /**
      * Cancel the reservation on all flights involved in the given reservation
-     *
      */
     public void cancelReservation() {
         try {
@@ -64,6 +62,7 @@ public class Reservation {
     /**
      * Used in cancelDay, to don't remove the same flight two times.
      * Only remove the other flights from a reservation that is cancelled.
+     *
      * @param id
      */
     public void cancelReservation(UUID id) {
@@ -95,7 +94,7 @@ public class Reservation {
                 ", flights=");
         for (Flight one : flights)
             res.append(flights.toString());
-        return  res.toString();
+        return res.toString();
     }
 
 

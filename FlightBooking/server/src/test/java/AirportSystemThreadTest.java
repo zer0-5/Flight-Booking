@@ -1,6 +1,9 @@
-import airport.Reservation;
-import exceptions.*;
-import org.junit.jupiter.api.*;
+import exceptions.DayAlreadyCanceledException;
+import exceptions.RouteAlreadyExistsException;
+import exceptions.RouteDoesntExistException;
+import exceptions.UsernameAlreadyExistsException;
+import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.BeforeAll;
 
 import java.nio.charset.Charset;
 import java.time.LocalDate;
@@ -12,14 +15,12 @@ class AirportSystemThreadTest {
 
     // Used to test
     private final String username = "admin";
+    protected int testParameter;
     private AirportSystem airportSystem;
     // Used to test.
     private LocalDate date;
-
     //Used to test
     private ReentrantLock testLock;
-    protected int testParameter;
-
     //Test parameters, to test with different values.
     private int N = 20;
     private int numberDays = 3;
@@ -79,7 +80,7 @@ class AirportSystemThreadTest {
         }
     }
 
-    private void mixThreadsAndRun(List<Thread> threads){
+    private void mixThreadsAndRun(List<Thread> threads) {
         Collections.shuffle(threads);
         for (Thread t : threads) {
             t.start();
@@ -145,48 +146,6 @@ class AirportSystemThreadTest {
         assert testParameter == routeCapacity * numberDays;
     }
 
-    private class MakeReservation implements Runnable {
-        private AirportSystem airportSystem;
-
-        protected int reservationSucceed;
-        protected int numberDays;
-        private ReentrantLock lock;
-        protected Set<UUID> reserves;
-        boolean addTestParameter;
-
-        public MakeReservation(AirportSystem airportSystem, int numberDays, Set<UUID> reservations, boolean flagTestParameter) {
-            this.airportSystem = airportSystem;
-            this.reservationSucceed = 0;
-            this.numberDays = numberDays;
-            lock = new ReentrantLock();
-            this.reserves = reservations;
-            addTestParameter = flagTestParameter;
-        }
-
-        public void success(UUID reservationCode) {
-            try {
-                lock.lock();
-                reservationSucceed++;
-                reserves.add(reservationCode);
-            } finally {
-                lock.unlock();
-            }
-        }
-
-        public void run() {
-            List<String> cities1 = new ArrayList<>(Arrays.asList("Paris", "Lisbon"));
-            try {
-                UUID id = airportSystem.reserveFlight(username, cities1, date, date.plusDays(numberDays - 1));
-                System.out.println("Reserva voo");
-                success(id);
-                if (addTestParameter) generalSuccess();
-            } catch (Exception e) {
-            }
-        }
-    }
-
-    // ------------------ Teste cancel day ----------------------
-
     /**
      * Reserves flights and dele days at a random order.
      */
@@ -208,30 +167,7 @@ class AirportSystemThreadTest {
         mixThreadsAndRun(threads);
     }
 
-    private class CancelDay implements Runnable {
-        private AirportSystem airportSystem;
-
-        protected int dayToBeCanceled;
-
-        public CancelDay(AirportSystem airportSystem, int dayToBeCanceled) {
-            this.airportSystem = airportSystem;
-            this.dayToBeCanceled = dayToBeCanceled;
-        }
-
-        public void run() {
-            try {
-                System.out.println("Cancela dia " + date.plusDays(dayToBeCanceled));
-                airportSystem.cancelDay(date.plusDays(dayToBeCanceled));
-                System.out.println("Dia cancelado" + date.plusDays(dayToBeCanceled));
-            } catch (DayAlreadyCanceledException e) {
-                System.out.println("Dia já cancelado");
-            }
-
-        }
-    }
-
-    //--------------Tenta cancelar reservas após dias cancelados -----
-    //Deve ter 0 reservas canceladas com sucesso
+    // ------------------ Teste cancel day ----------------------
 
     /**
      * Reserves flights and dele days at a random order.
@@ -270,12 +206,111 @@ class AirportSystemThreadTest {
 
     }
 
+    //----------------------------A test to test tests. ----------------------
+    @org.junit.jupiter.api.Test
+    void partyTest() {
+        System.out.println("\n\nParty test\n\n");
+        List<Thread> threads = new ArrayList<Thread>();
+        int numberReservations = 10;
+        MakeReservation makeReservation = new MakeReservation(airportSystem, numberDays, new TreeSet<>(), true);
 
-    private class CancelFlight implements Runnable {
+        //It will add much more.
+        int numberInsertRoutes = 10;
+        //This number will serve to the range of days of reservations.
+        int cancelDays = numberDays;
+        int registerClients = 10;
+
+        for (int i = 0; i < numberInsertRoutes; i++) {
+            threads.add(new Thread(new InsertRoutes(airportSystem, numberInsertRoutes)));
+        }
+        for (int i = 0; i < numberReservations; i++) {
+            threads.add(new Thread(makeReservation));
+        }
+
+        for (int i = 0; i < numberDays; i++) {
+            threads.add(new Thread(new CancelDay(airportSystem, i)));
+        }
+        for (int i = 0; i < registerClients; i++) {
+            threads.add(new Thread(new RegisterClient(airportSystem, registerClients)));
+        }
+
+        mixThreadsAndRun(threads);
+
+        //As duas rotas são as Lisboa - Paris - Londres.
+        assert (airportSystem.getRoutes().size() == numberInsertRoutes * numberInsertRoutes + 2);
+        assert ((int) airportSystem.numberClients() == registerClients * registerClients);
+        assert (airportSystem.numberCanceledDays() == numberDays);
+        System.out.println("\n\n\nEnd Party\n\n\n");
+    }
+
+    //--------------Tenta cancelar reservas após dias cancelados -----
+    //Deve ter 0 reservas canceladas com sucesso
+
+    private class MakeReservation implements Runnable {
+        protected int reservationSucceed;
+        protected int numberDays;
+        protected Set<UUID> reserves;
+        boolean addTestParameter;
         private AirportSystem airportSystem;
         private ReentrantLock lock;
+
+        public MakeReservation(AirportSystem airportSystem, int numberDays, Set<UUID> reservations, boolean flagTestParameter) {
+            this.airportSystem = airportSystem;
+            this.reservationSucceed = 0;
+            this.numberDays = numberDays;
+            lock = new ReentrantLock();
+            this.reserves = reservations;
+            addTestParameter = flagTestParameter;
+        }
+
+        public void success(UUID reservationCode) {
+            try {
+                lock.lock();
+                reservationSucceed++;
+                reserves.add(reservationCode);
+            } finally {
+                lock.unlock();
+            }
+        }
+
+        public void run() {
+            List<String> cities1 = new ArrayList<>(Arrays.asList("Paris", "Lisbon"));
+            try {
+                UUID id = airportSystem.reserveFlight(username, cities1, date, date.plusDays(numberDays - 1));
+                System.out.println("Reserva voo");
+                success(id);
+                if (addTestParameter) generalSuccess();
+            } catch (Exception e) {
+            }
+        }
+    }
+
+    private class CancelDay implements Runnable {
+        protected int dayToBeCanceled;
+        private AirportSystem airportSystem;
+
+        public CancelDay(AirportSystem airportSystem, int dayToBeCanceled) {
+            this.airportSystem = airportSystem;
+            this.dayToBeCanceled = dayToBeCanceled;
+        }
+
+        public void run() {
+            try {
+                System.out.println("Cancela dia " + date.plusDays(dayToBeCanceled));
+                airportSystem.cancelDay(date.plusDays(dayToBeCanceled));
+                System.out.println("Dia cancelado" + date.plusDays(dayToBeCanceled));
+            } catch (DayAlreadyCanceledException e) {
+                System.out.println("Dia já cancelado");
+            }
+
+        }
+    }
+
+    private class CancelFlight implements Runnable {
         protected int numberCancelations;
         protected UUID toCancel;
+        private AirportSystem airportSystem;
+        private ReentrantLock lock;
 
         public CancelFlight(AirportSystem airportSystem, UUID toCancel) {
             this.airportSystem = airportSystem;
@@ -297,43 +332,6 @@ class AirportSystemThreadTest {
         }
     }
 
-    //----------------------------A test to test tests. ----------------------
-    @org.junit.jupiter.api.Test
-    void partyTest() {
-        System.out.println("\n\nParty test\n\n");
-        List<Thread> threads = new ArrayList<Thread>();
-        int numberReservations = 10;
-        MakeReservation makeReservation = new MakeReservation(airportSystem, numberDays, new TreeSet<>(), true);
-
-        //It will add much more.
-        int numberInsertRoutes = 10;
-        //This number will serve to the range of days of reservations.
-        int cancelDays = numberDays;
-        int registerClients = 10;
-
-        for (int i = 0; i < numberInsertRoutes; i++){
-            threads.add(new Thread(new InsertRoutes(airportSystem, numberInsertRoutes)));
-        }
-        for (int i = 0; i < numberReservations; i++){
-            threads.add(new Thread(makeReservation));
-        }
-
-        for (int i = 0; i < numberDays; i++){
-            threads.add(new Thread(new CancelDay(airportSystem, i)));
-        }
-        for (int i = 0; i < registerClients; i++){
-            threads.add(new Thread(new RegisterClient(airportSystem, registerClients)));
-        }
-
-        mixThreadsAndRun(threads);
-
-        //As duas rotas são as Lisboa - Paris - Londres.
-        assert (airportSystem.getRoutes().size() == numberInsertRoutes*numberInsertRoutes + 2);
-        assert ((int) airportSystem.numberClients() == registerClients*registerClients );
-        assert (airportSystem.numberCanceledDays() == numberDays);
-        System.out.println("\n\n\nEnd Party\n\n\n");
-    }
-
     private class InsertRoutes implements Runnable {
         private AirportSystem airportSystem;
         private ReentrantLock lock;
@@ -349,16 +347,16 @@ class AirportSystemThreadTest {
             try {
                 byte[] array = new byte[7];
                 for (int i = 0; i < numberInsertions; i++) {
-                   new Random().nextBytes(array);
-                   String orig = new String(array, Charset.forName("UTF-8"));
+                    new Random().nextBytes(array);
+                    String orig = new String(array, Charset.forName("UTF-8"));
 
-                   new Random().nextBytes(array);
-                   String dest = new String(array, Charset.forName("UTF-8"));
+                    new Random().nextBytes(array);
+                    String dest = new String(array, Charset.forName("UTF-8"));
 
-                   System.out.println("Insert route ");
+                    System.out.println("Insert route ");
 
-                   airportSystem.addRoute(orig, dest, 2);
-               }
+                    airportSystem.addRoute(orig, dest, 2);
+                }
             } catch (Exception e) {
                 //É suposto nenhuma reserva ser cancelada,
                 // porque todas são inválidas, visto que os dias foram cancelados.
