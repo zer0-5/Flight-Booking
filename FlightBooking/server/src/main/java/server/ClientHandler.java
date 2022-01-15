@@ -58,6 +58,7 @@ public class ClientHandler implements Runnable {
 
                         case GET_ROUTES -> getRoutes(data);
                         case GET_RESERVATIONS -> getReservations();
+                        case GET_PATHS_BETWEEN -> getPathsBetween(data);
                         case RESERVE -> reserve(data);
                         case CANCEL_RESERVATION -> cancelReservation(data);
                     }
@@ -123,6 +124,13 @@ public class ClientHandler implements Runnable {
 
     private void getRoutes(List<byte[]> data) throws IOException {
         sendOk(GET_ROUTES.ordinal(), airportSystem.getRoutes().stream().map(Route::serialize).collect(Collectors.toList()));
+    }
+
+    private void getPathsBetween(List<byte[]> data) throws RouteDoesntExistException, IOException {
+        String origin = new String(data.get(0));
+        String destination = new String(data.get(1));
+        sendOk(GET_PATHS_BETWEEN.ordinal(),
+                Collections.singletonList(airportSystem.getPathsBetween(origin, destination).serialize()));
     }
 
     private void insertRoute(List<byte[]> data) throws RouteDoesntExistException, RouteAlreadyExistsException, IOException, ForbiddenException {

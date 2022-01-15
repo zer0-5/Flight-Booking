@@ -696,13 +696,22 @@ public class AirportSystem implements IAirportSystem {
     //}
 
     public PossiblePath getPathsBetween(String from, String dest) throws RouteDoesntExistException {
-        if (destinationCitiesFrom(from.toUpperCase()).size() == 0) throw new RouteDoesntExistException();
-        return getPathsBetweenAux(from.toUpperCase(), dest.toUpperCase(), 4);
+        try {
+            this.readLockConnections.lock();
+            if (destinationCitiesFrom(from.toUpperCase()).size() == 0) throw new RouteDoesntExistException();
+
+            PossiblePath possiblePath = getPathsBetweenAux(from.toUpperCase(), dest.toUpperCase(), 4);
+            if (possiblePath == null )
+                throw new RouteDoesntExistException(from,dest);
+
+            return possiblePath;
+        } finally {
+            this.readLockConnections.unlock();
+        }
     }
 
     //Faltam locks
     private Set<String> destinationCitiesFrom(String origin) {
-
         LockObject<Map<String, Route>> thisCity = connectionsByCityOrig.get(origin);
         if (thisCity == null) return new TreeSet<>();
         return thisCity.elem().keySet();

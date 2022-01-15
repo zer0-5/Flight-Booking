@@ -1,5 +1,6 @@
 package system;
 
+import airport.PossiblePath;
 import airport.Reservation;
 import airport.Route;
 import exceptions.*;
@@ -68,6 +69,8 @@ public interface IAirportSystem {
      * @return the list of the existent routes.
      */
     List<Route> getRoutes();
+
+    PossiblePath getPathsBetween(String from, String dest) throws RouteDoesntExistException;
 
     /**
      * @param username the name of the user

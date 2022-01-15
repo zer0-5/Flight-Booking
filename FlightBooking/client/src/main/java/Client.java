@@ -1,3 +1,4 @@
+import airport.PossiblePath;
 import airport.Reservation;
 import airport.Route;
 import connection.TaggedConnection;
@@ -14,7 +15,6 @@ import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Scanner;
-import java.util.stream.Collectors;
 
 import static connection.TaggedConnection.Frame;
 import static java.lang.System.out;
@@ -56,6 +56,7 @@ public class Client implements Runnable {
 
                         case GET_ROUTES -> getRoutes();
                         case GET_RESERVATIONS -> getReservations();
+                        case GET_PATHS_BETWEEN -> getPathsBetween();
                         case RESERVE -> reserve();
                         case CANCEL_RESERVATION -> cancelReservation();
                     }
@@ -178,7 +179,28 @@ public class Client implements Runnable {
             logger.info("Get routes with success!");
             response.data().stream().map(Route::deserialize).forEach(out::println);
         }
-        // TODO:
+    }
+
+    private void getPathsBetween() throws NotLoggedInException, IOException {
+        if (!logged_in) throw new NotLoggedInException();
+
+        out.print("Insert origin: ");
+        String origin = in.nextLine();
+        out.print("Insert destination: ");
+        String destination = in.nextLine();
+
+        List<byte[]> args = new ArrayList<>();
+        args.add(origin.getBytes(StandardCharsets.UTF_8));
+        args.add(destination.getBytes(StandardCharsets.UTF_8));
+        taggedConnection.send(GET_PATHS_BETWEEN.ordinal(), args);
+
+        Frame response = taggedConnection.receive();
+
+        if (checkError(response)) printError(response);
+        else {
+            logger.info("Get Possible Path with success!");
+            response.data().stream().map(PossiblePath::deserialize).forEach(e-> out.println(e.toStringPretty("")));
+        }
     }
 
     private void insertRoute() throws IOException, NotLoggedInException {
@@ -221,7 +243,6 @@ public class Client implements Runnable {
 
         if (checkError(response)) printError(response);
         else out.println("Day successfully cancelled!");
-        // TODO:
     }
 
     private void register() throws IOException, AlreadyLoggedInException {

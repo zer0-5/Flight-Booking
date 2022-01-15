@@ -35,10 +35,10 @@ public class PossiblePath {
 
     public static PossiblePath deserialize(byte[] bytes) {
         //System.out.println("Leu " + bytes.length + " bytes.");
-        return deserialize(ByteBuffer.wrap(bytes));
+        return deserializeAux(ByteBuffer.wrap(bytes));
     }
 
-    private static PossiblePath deserialize(ByteBuffer bb) {
+    private static PossiblePath deserializeAux(ByteBuffer bb) {
         int sizeNameCity = bb.getInt();
         byte[] thisCityBytes = new byte[sizeNameCity];
         bb.get(thisCityBytes);
@@ -49,7 +49,7 @@ public class PossiblePath {
 
         List<PossiblePath> list = new ArrayList<>();
         for (int i = 0; i < size; i++ ) {
-            list.add(deserialize(bb));
+            list.add(deserializeAux(bb));
         }
         for (PossiblePath path : list)
             possiblePath.addPossiblePath(path);
@@ -80,6 +80,7 @@ public class PossiblePath {
         //System.out.println(bb);
         return bb.array();
     }
+
     @Override
     public String toString() {
         if (isDestiny) return " [Destination " + thisCity + "] ";
