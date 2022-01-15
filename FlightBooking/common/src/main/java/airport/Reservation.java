@@ -2,7 +2,6 @@ package airport;
 
 import users.User;
 
-import java.util.HashSet;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.locks.Lock;
@@ -30,8 +29,7 @@ public class Reservation {
      */
     private final Set<Flight> flights;
 
-    private final Lock readLockFlights;
-    private final Lock writeLockFlights;
+    private final Lock lockFlights;
 
     /**
      * Constructor
@@ -43,9 +41,7 @@ public class Reservation {
         this.id = UUID.randomUUID();
         this.client = client;
         this.flights = flightsIds;
-        ReentrantReadWriteLock rwFlights = new ReentrantReadWriteLock();
-        this.readLockFlights = rwFlights.readLock();
-        this.writeLockFlights = rwFlights.writeLock();
+        this.lockFlights = new ReentrantLock();
     }
 
 
@@ -55,13 +51,13 @@ public class Reservation {
      */
     public void cancelReservation() {
         try {
-            writeLockFlights.lock();
+            lockFlights.lock();
             for (Flight flight : flights) {
                 if (flight != null)
                     flight.removeReservation(this);
             }
         } finally {
-            writeLockFlights.unlock();
+            lockFlights.unlock();
         }
     }
 
@@ -72,13 +68,13 @@ public class Reservation {
      */
     public void cancelReservation(UUID id) {
         try {
-            writeLockFlights.lock();
+            lockFlights.lock();
             for (Flight flight : flights) {
                 if (flight != null && flight.id != id)
                     flight.removeReservation(this);
             }
         } finally {
-            writeLockFlights.unlock();
+            lockFlights.unlock();
         }
     }
 
