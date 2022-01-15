@@ -5,6 +5,7 @@
 plugins {
     id 'g26.java-conventions'
     id 'application'
+    id  'java'
     id 'org.openjfx.javafxplugin' version '0.0.9'
 }
 
@@ -14,6 +15,10 @@ dependencies {
 
 repositories {
     mavenCentral()
+}
+
+test {
+    useJUnitPlatform()
 }
 
 javafx {
