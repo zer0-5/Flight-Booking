@@ -46,7 +46,7 @@ public class Frame implements Initializable, Navigator {
     public Frame(ClientCommunication client) {
         this.client = client;
         this.navigationStack = new Stack<>();
-        frameLoader = new FXMLLoader(getClass().getResource("/main/gui/Frame.fxml"));
+        frameLoader = new FXMLLoader(getClass().getResource("/gui/Frame.fxml"));
         frameLoader.setController(this);
     }
 
@@ -109,7 +109,7 @@ public class Frame implements Initializable, Navigator {
     @FXML
     public void initialize(URL url, ResourceBundle resourceBundle) {
         System.out.println("Initialize");
-        FXMLLoader loader = new FXMLLoader(getClass().getResource("/frame/gui/LogIn.fxml"));
+        FXMLLoader loader = new FXMLLoader(getClass().getResource("/gui/LogIn.fxml"));
         LogIn controller = new LogIn(client, this);
         loader.setController(controller);
 
