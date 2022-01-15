@@ -664,9 +664,30 @@ public class AirportSystem implements IAirportSystem {
         }
     }
 
-    public Reservation getReservation(UUID resID){
-        return this.reservationsById.get(resID);
+    public Set<Reservation> getReservationsFromClient(String username) throws UserNotFoundException {
+        User user = getUserById(username);
+        if (user == null)
+            throw new UserNotFoundException();
+
+        Set<UUID> reservations = user.getReservations();
+
+        Set<Reservation> list = new HashSet<>();
+        try {
+            this.readLockUser.lock();
+            for( UUID id : reservations){
+                Reservation r = this.reservationsById.get(id);
+                if (r != null)
+                    list.add(r);
+            }
+            return list;
+        } finally {
+            this.readLockReservations.unlock();
+        }
     }
+
+    //public Reservation getReservation(UUID resID){
+    //    return this.reservationsById.get(resID);
+    //}
 
     public PossiblePath getPathsBetween(String from, String dest) throws RouteDoesntExistException {
         if (destinationCitiesFrom(from.toUpperCase()).size() == 0) throw new RouteDoesntExistException();

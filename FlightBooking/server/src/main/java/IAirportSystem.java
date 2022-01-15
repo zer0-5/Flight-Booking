@@ -66,6 +66,8 @@ public interface IAirportSystem {
      */
     List<Route> getRoutes();
 
+    Set<Reservation> getReservationsFromClient(String username) throws UserNotFoundException;
+
     /**
      * Registers a client into the system.
      *

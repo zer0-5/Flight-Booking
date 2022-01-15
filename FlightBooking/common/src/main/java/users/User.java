@@ -110,6 +110,15 @@ public abstract class User {
         }
     }
 
+    public Set<UUID> getReservations() {
+        try {
+            lock.lock();
+            return new HashSet<>(reservations);
+        } finally {
+            lock.unlock();
+        }
+    }
+
     @Override
     public boolean equals(Object o) {
         try {

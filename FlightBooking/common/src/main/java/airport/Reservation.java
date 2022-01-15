@@ -83,9 +83,9 @@ public class Reservation {
      *
      * @return true if are the same user
      */
-    //public boolean checksUser(User user) {
-    //    return client.equals(user);
-    //}
+    public boolean checksUser(String username) {
+        return client.getUsername().equals(username);
+    }
 
     @Override
     public String toString() {
