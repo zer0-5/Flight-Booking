@@ -4,6 +4,7 @@ import users.User;
 
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
+import java.util.HashSet;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.locks.Lock;
@@ -21,9 +22,9 @@ public class Reservation {
     public final UUID id;
 
     /**
-     * Id of the client that owns this reservation.
+     * Client that owns this reservation.
      */
-    public final UUID clientId;
+    public final User client;
 
     /**
      * Flights with the connections of the reservation.
@@ -89,7 +90,7 @@ public class Reservation {
      * Used in cancelDay, to don't remove the same flight two times.
      * Only remove the other flights from a reservation that is cancelled.
      *
-     * @param id
+     * @param id ID
      */
     public void cancelReservation(UUID id) {
         try {
@@ -110,6 +111,14 @@ public class Reservation {
      */
     public boolean checksUser(String username) {
         return client.getUsername().equals(username);
+    }
+
+    public User getClient() {
+        return client;
+    }
+
+    public Set<Flight> getFlights() {
+        return new HashSet<>(flights);
     }
 
     public byte[] serialize() {
@@ -163,7 +172,7 @@ public class Reservation {
                 "client=" + client +
                 ", flights=");
         for (Flight one : flights)
-            res.append(flights.toString());
+            res.append(flights);
         return res.toString();
     }
 }

@@ -98,15 +98,6 @@ public class User {
         }
     }
 
-    public void addReservation(UUID reservation) {
-        try {
-            lock.lock();
-            this.reservations.add(reservation);
-        } finally {
-            lock.unlock();
-        }
-    }
-
     public void removeReservation(UUID reservation) {
         try {
             lock.lock();
