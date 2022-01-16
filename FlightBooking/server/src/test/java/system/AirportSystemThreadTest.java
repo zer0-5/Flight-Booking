@@ -118,10 +118,9 @@ class AirportSystemThreadTest {
     }
 
     private class makeReservation implements Runnable {
-        private AirportSystem airportSystem;
-
         protected int reservationSucceed;
         protected int numberDays;
+        private AirportSystem airportSystem;
         private ReentrantLock lock;
 
         public makeReservation(AirportSystem airportSystem, int numberDays) {

@@ -16,24 +16,9 @@ public class PossiblePath {
 
         this.isDestiny = isDest;
         connections = new LinkedList<>();
-        //if (isDest)
-        //    isDestiny = true;
-        //else{
-        //    isDestiny = false;
-        //    connections = new LinkedList<>();
-        //}
-    }
-
-    public void addPossiblePath(PossiblePath toInsert) {
-        connections.add(toInsert);
-    }
-
-    public int numPossiblePaths() {
-        return connections.size();
     }
 
     public static PossiblePath deserialize(byte[] bytes) {
-        //System.out.println("Leu " + bytes.length + " bytes.");
         return deserializeAux(ByteBuffer.wrap(bytes));
     }
 
@@ -44,7 +29,6 @@ public class PossiblePath {
         String thisCityDes = new String(thisCityBytes);
         int size = bb.getInt();
         PossiblePath possiblePath = new PossiblePath(size == 0, thisCityDes);
-        //if (true) return new PossiblePath(true, "false");
 
         List<PossiblePath> list = new ArrayList<>();
         for (int i = 0; i < size; i++) {
@@ -52,13 +36,17 @@ public class PossiblePath {
         }
         for (PossiblePath path : list)
             possiblePath.addPossiblePath(path);
-        //logger.info("deserialize route: " + possiblePath);
         return possiblePath;
     }
 
-    /**
-     * @return
-     */
+    public void addPossiblePath(PossiblePath toInsert) {
+        connections.add(toInsert);
+    }
+
+    public int numPossiblePaths() {
+        return connections.size();
+    }
+
     public byte[] serialize() {
         byte[] cityToByte = thisCity.getBytes();
         ByteBuffer bb = ByteBuffer.allocate(Integer.BYTES + cityToByte.length + Integer.BYTES);
@@ -76,7 +64,6 @@ public class PossiblePath {
 
             bb = newBuffer;
         }
-        //System.out.println(bb);
         return bb.array();
     }
 

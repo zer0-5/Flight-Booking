@@ -34,12 +34,6 @@ public class AirportSystem implements IAirportSystem {
     private final Lock writeLockConnections;
 
     /**
-     * Associates each ID to the respective flight
-     */
-    private final Map<UUID, Flight> flightsById;
-    private final Lock lockFlights;
-
-    /**
      * Associates each day to the flies that happen in that day.
      * If a connection exists, but the fly in that day doesn't, then the flight will be created.
      * We can only have one flight by connection in each day.
@@ -68,7 +62,6 @@ public class AirportSystem implements IAirportSystem {
     public AirportSystem() {
         this.usersById = new HashMap<>();
         this.connectionsByCityOrig = new HashMap<>();
-        this.flightsById = new HashMap<>();
         this.flightsByDate = new HashMap<>();
         this.canceledDays = new HashSet<>();
         this.reservationsById = new HashMap<>();
@@ -80,8 +73,6 @@ public class AirportSystem implements IAirportSystem {
         ReentrantReadWriteLock lockConnections = new ReentrantReadWriteLock();
         this.readLockConnections = lockConnections.readLock();
         this.writeLockConnections = lockConnections.readLock();
-
-        this.lockFlights = new ReentrantLock();
 
         this.lockFlightsByDate = new ReentrantLock();
 
@@ -182,53 +173,6 @@ public class AirportSystem implements IAirportSystem {
     }
 
     /**
-     * Checks if a route is valid.
-     *
-     * @param orig City of departure of the flight.
-     * @param dest City of arrival of the flight.
-     * @return true if this route exists.
-     */
-    private boolean validRoute(String orig, String dest) {
-        String origUpperCase = orig.toUpperCase();
-        String destUpperCase = dest.toUpperCase();
-        try {
-            readLockConnections.lock();
-            LockObject<Map<String, Route>> routesWithLock = connectionsByCityOrig.get(origUpperCase);
-            return routesWithLock != null &&
-                    routesWithLock.elem().containsKey(destUpperCase);
-        } finally {
-            readLockConnections.unlock();
-        }
-    }
-
-    /**
-     * Verifies if a given route can be made through the possible routes.
-     *
-     * @param cities All cities in order of passage
-     * @return true if it's possible to make this trip
-     */
-    private boolean validRoutes(final List<String> cities) {
-        String origCity = null;
-        String destCity;
-        try {
-            readLockConnections.lock();
-            for (String city : cities) {
-                if (origCity == null) {
-                    origCity = city;
-                    continue;
-                }
-                destCity = city;
-                if (!validRoute(origCity, destCity))
-                    return false;
-                origCity = city;
-            }
-            return true;
-        } finally {
-            readLockConnections.unlock();
-        }
-    }
-
-    /**
      * @param cities All cities in order of passage
      * @return all cities in order of passage
      */
@@ -274,7 +218,6 @@ public class AirportSystem implements IAirportSystem {
 
             flightsByRouteWithLock.writeLock();
             flightsByRoute = flightsByRouteWithLock.elem();
-
         } finally {
             lockFlightsByDate.unlock();
         }
@@ -356,9 +299,6 @@ public class AirportSystem implements IAirportSystem {
             lockFlightsByDate.lock();
             flightsWithLock = flightsByDate.get(date);
 
-            lockFlights.lock();
-            flightsById.putIfAbsent(flight.id, flight);
-
             if (flightsWithLock == null) {
                 flightsWithLock = new LockObject<>(new HashMap<>());
                 flightsWithLock.elem().put(route, flight);
@@ -367,12 +307,10 @@ public class AirportSystem implements IAirportSystem {
             }
             flightsWithLock.writeLock();
         } finally {
-            lockFlights.unlock();
             lockFlightsByDate.unlock();
         }
         try {
             flightsWithLock.elem().put(route, flight);
-            //flights.put(route, flightsWithLock.elem().put(flight));
             return flight;
         } finally {
             flightsWithLock.writeUnlock();
@@ -411,7 +349,6 @@ public class AirportSystem implements IAirportSystem {
         } catch (BookingFlightsNotPossibleException e) {
             throw new BookingFlightsNotPossibleException();
         }
-        // Set<UUID> flightIds = flights.stream().map(e -> e.id).collect(Collectors.toSet());
         Reservation reservation = new Reservation(user, flights);
         try {
             lockReservations.lock();
@@ -426,7 +363,7 @@ public class AirportSystem implements IAirportSystem {
                 flight.addReservation(reservation);
             }
         } catch (FullFlightException e) {
-            // nao devia acontecer
+            // Should not happen
             throw new BookingFlightsNotPossibleException();
         } finally {
             for (Flight flight : flights) {
@@ -539,12 +476,6 @@ public class AirportSystem implements IAirportSystem {
                 flights.forEach(Flight::lock);
                 try {
                     for (Flight flight : flights) {
-                        try {
-                            this.lockFlights.lock();
-                            this.flightsById.remove(flight.id);
-                        } finally {
-                            this.lockFlights.unlock();
-                        }
                         canceledReservations.addAll(flight.getReservations());
                         flight.cancelFlight();
                     }
@@ -686,10 +617,6 @@ public class AirportSystem implements IAirportSystem {
         }
     }
 
-    //public Reservation getReservation(UUID resID){
-    //    return this.reservationsById.get(resID);
-    //}
-
     public PossiblePath getPathsBetween(String from, String dest) throws RouteDoesntExistException {
         try {
             this.readLockConnections.lock();
@@ -705,11 +632,21 @@ public class AirportSystem implements IAirportSystem {
         }
     }
 
-    //Faltam locks
     private Set<String> destinationCitiesFrom(String origin) {
-        LockObject<Map<String, Route>> thisCity = connectionsByCityOrig.get(origin);
-        if (thisCity == null) return new TreeSet<>();
-        return thisCity.elem().keySet();
+        LockObject<Map<String, Route>> thisCity;
+        try {
+            readLockConnections.lock();
+            thisCity = connectionsByCityOrig.get(origin);
+            if (thisCity == null) return new TreeSet<>();
+            thisCity.readLock();
+        } finally {
+            readLockConnections.unlock();
+        }
+        try {
+            return new HashSet<>(thisCity.elem().keySet());
+        } finally {
+            thisCity.readUnlock();
+        }
     }
 
     private PossiblePath getPathsBetweenAux(String from, String dest, int depth) {
@@ -733,41 +670,42 @@ public class AirportSystem implements IAirportSystem {
 
     }
 
-    public static void main(String[] args) throws RouteAlreadyExistsException, RouteDoesntExistException {
-        AirportSystem air = new AirportSystem();
-        air.addRoute("a", "b", 1);
-        air.addRoute("a", "c", 1);
-        air.addRoute("c", "dest", 1);
-        air.addRoute("b", "dest", 1);
-        air.addRoute("b", "d", 1);
-        air.addRoute("d", "dest", 1);
-        air.addRoute("a", "dest", 1);
-        air.addRoute("a", "d", 1);
-        air.addRoute("f", "o", 1);
+    // public static void main(String[] args) throws RouteAlreadyExistsException, RouteDoesntExistException {
+    //     AirportSystem air = new AirportSystem();
+    //     air.addRoute("a", "b", 1);
+    //     air.addRoute("a", "c", 1);
+    //     air.addRoute("c", "dest", 1);
+    //     air.addRoute("b", "dest", 1);
+    //     air.addRoute("b", "d", 1);
+    //     air.addRoute("d", "dest", 1);
+    //     air.addRoute("a", "dest", 1);
+    //     air.addRoute("a", "d", 1);
+    //     air.addRoute("f", "o", 1);
 
-        System.out.println("Conexões:");
-        try {
+    //     System.out.println("Conexões:");
+    //     try {
 
-            PossiblePath p1 = air.getPathsBetween("a", "dest");
-            System.out.println("BEFORE P1");
-            System.out.println(p1.toStringPretty(""));
-            PossiblePath p1_ = PossiblePath.deserialize(p1.serialize());
+    //         PossiblePath p1 = air.getPathsBetween("a", "dest");
+    //         System.out.println("BEFORE P1");
+    //         System.out.println(p1.toStringPretty(""));
+    //         PossiblePath p1_ = PossiblePath.deserialize(p1.serialize());
 
-            System.out.println("AFTER P1");
-            System.out.println(p1_.toStringPretty(""));
+    //         System.out.println("AFTER P1");
+    //         System.out.println(p1_.toStringPretty(""));
 
-            PossiblePath p2 = air.getPathsBetween("a", "dest");
-            System.out.println(p2.toString());
-            PossiblePath p3 = air.getPathsBetween("dest", "dest2");
-            System.out.println(p3.toStringPretty(""));
-        } catch (RouteDoesntExistException e) {
-        }
-    }
+    //         PossiblePath p2 = air.getPathsBetween("a", "dest");
+    //         System.out.println(p2.toString());
+    //         PossiblePath p3 = air.getPathsBetween("dest", "dest2");
+    //         System.out.println(p3.toStringPretty(""));
+    //     } catch (RouteDoesntExistException e) {
+    //         System.out.println("Error");
+    //     }
+    // }
 
     /**
      * Used in tests to verify if all routes were inserted.
      *
-     * @return
+     * @return number of canceled days
      */
     public int numberCanceledDays() {
         return canceledDays.size();
@@ -776,7 +714,7 @@ public class AirportSystem implements IAirportSystem {
     /**
      * Used in tests to verify if all clients were inserted.
      *
-     * @return
+     * @return number of clients
      */
     public long numberClients() {
         return usersById.values().stream().filter(user -> user instanceof Client).count();

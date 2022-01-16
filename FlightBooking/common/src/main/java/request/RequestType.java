@@ -1,9 +1,11 @@
 package request;
 
 public enum RequestType {
-    // Without login
+    // Login Commands
     REGISTER,
     LOGIN,
+    CHANGE_PASSWORD,
+    LOGOUT,
     EXIT,
 
     // Admin commands
@@ -12,10 +14,8 @@ public enum RequestType {
 
     // Client commands
     GET_ROUTES,
-    GET_RESERVATIONS,
-    CHANGE_PASSWORD,
-    LOGOUT,
     GET_PATHS_BETWEEN,
+    GET_RESERVATIONS,
     RESERVE,
     CANCEL_RESERVATION,
     ;

@@ -5,7 +5,7 @@
 plugins {
     id 'g26.java-conventions'
     id 'application'
-    id  'java'
+    id 'java'
     id 'org.openjfx.javafxplugin' version '0.0.9'
 }
 
@@ -23,7 +23,7 @@ test {
 
 javafx {
     version = "16"
-    modules = [ 'javafx.fxml', 'javafx.controls' ]
+    modules = ['javafx.fxml', 'javafx.controls']
 }
 
 mainClassName = 'ClientApp'

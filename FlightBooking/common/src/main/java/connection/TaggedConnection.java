@@ -15,17 +15,10 @@ public class TaggedConnection implements AutoCloseable {
     private final Lock in = new ReentrantLock();
     private final Lock out = new ReentrantLock();
 
-    public record Frame(int tag, List<byte[]> data) {
-    }
-
     public TaggedConnection(Socket s) throws IOException {
         this.socket = s;
         this.inputStream = new DataInputStream(new BufferedInputStream(s.getInputStream()));
         this.outputStream = new DataOutputStream(new BufferedOutputStream(s.getOutputStream()));
-    }
-
-    public void send(Frame frame) throws IOException {
-        send(frame.tag, frame.data);
     }
 
     public void send(int tag, List<byte[]> data) throws IOException {
@@ -66,7 +59,6 @@ public class TaggedConnection implements AutoCloseable {
         return socket.getInetAddress();
     }
 
-
     public int getPort() {
         return socket.getPort();
     }
@@ -74,6 +66,9 @@ public class TaggedConnection implements AutoCloseable {
     @Override
     public void close() throws Exception {
         socket.close();
+    }
+
+    public record Frame(int tag, List<byte[]> data) {
     }
 }
 
