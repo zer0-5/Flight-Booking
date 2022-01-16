@@ -9,6 +9,7 @@ import org.apache.logging.log4j.Logger;
 import request.RequestType;
 import system.IAirportSystem;
 import users.Admin;
+import users.Notification;
 import users.User;
 
 import java.io.IOException;
@@ -63,6 +64,8 @@ public class ClientHandler implements Runnable {
                         case CANCEL_RESERVATION -> cancelReservation(data);
                         case LOGOUT -> logout();
                         case CHANGE_PASSWORD -> changePassword(data);
+
+                        case GET_NOTIFICATION -> getNotification();
                     }
 
                     logger.info("Request with type " + RequestType.getRequestType(frame.tag()) + " has been successfully handled!");
@@ -131,6 +134,11 @@ public class ClientHandler implements Runnable {
 
     private void getRoutes() throws IOException {
         sendOk(GET_ROUTES.ordinal(), airportSystem.getRoutes().stream().map(Route::serialize).collect(Collectors.toList()));
+    }
+
+    private void getNotification() throws IOException, UserNotFoundException {
+        var all = airportSystem.getNotificationsByUsername(account.getUsername());
+        sendOk(GET_NOTIFICATION.ordinal(), all.stream().map(Notification::serialize).collect(Collectors.toList()));
     }
 
     private void getPathsBetween(List<byte[]> data) throws RouteDoesntExistException, IOException {

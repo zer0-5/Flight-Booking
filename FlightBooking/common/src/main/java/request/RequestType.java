@@ -18,6 +18,8 @@ public enum RequestType {
     GET_PATHS_BETWEEN,
     RESERVE,
     CANCEL_RESERVATION,
+
+    GET_NOTIFICATION,
     ;
 
 

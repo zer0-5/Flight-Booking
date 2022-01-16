@@ -39,6 +39,10 @@ public class Main {
 
         UUID id = iAirportSystem.reserveFlight(user.getUsername(), cities, LocalDate.now(), LocalDate.now().plusDays(10));
         logger.info("Reservation with success with id: " + id);
+        try {
+            iAirportSystem.cancelDay(LocalDate.now());
+        } catch (DayAlreadyCanceledException ignored) {}
+        //var ola = iAirportSystem.getNotificationsByUsername("1");
         return iAirportSystem;
     }
 

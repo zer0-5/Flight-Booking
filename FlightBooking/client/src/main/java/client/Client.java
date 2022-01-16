@@ -8,16 +8,14 @@ import exceptions.AlreadyLoggedInException;
 import exceptions.NotLoggedInException;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import users.Notification;
 
 import java.io.IOException;
 import java.net.Socket;
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 import java.time.LocalDate;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Scanner;
-import java.util.UUID;
+import java.util.*;
 import java.util.stream.Collectors;
 
 import static java.lang.System.out;
@@ -32,6 +30,8 @@ public class Client implements Runnable {
     private final Demultiplexer demultiplexer;
     private final Scanner in; // From console
     private boolean logged_in;
+
+    private Queue<String> pendingNotifications = new ArrayDeque<>();
 
     public Client() throws IOException {
         this.demultiplexer = new Demultiplexer(new TaggedConnection(new Socket(host, PORT))); // TODO: Repetir a conexão caso o server não esteja ligado.
@@ -65,6 +65,8 @@ public class Client implements Runnable {
                         case CANCEL_RESERVATION -> cancelReservationIO();
                         case LOGOUT -> logout();
                         case CHANGE_PASSWORD -> changePasswordIO();
+
+                        case GET_NOTIFICATION -> getNotifications();
                     }
                     out.println();
                 } catch (Exception e) {
@@ -153,7 +155,7 @@ public class Client implements Runnable {
 
         if (checkError(response)) printError(response);
         else {
-            logger.info("Cancel reservation with success!");
+            logger.info("Reservation cancelled with success!");
             logger.info(Reservation.deserialize(response.get(0)));
         }
     }
@@ -179,10 +181,10 @@ public class Client implements Runnable {
         out.print("Insert the end date with the following format \"2007-12-03\": ");
         LocalDate end = LocalDate.parse(in.nextLine());
 
-        out.println("Reservation id: " + reserve(cities, start, end));
+        reserve(cities, start, end);
     }
 
-    public UUID reserve(List<String> cities, LocalDate start, LocalDate end) throws IOException, InterruptedException {
+    public void reserve(List<String> cities, LocalDate start, LocalDate end) throws IOException, InterruptedException {
         List<byte[]> list = new ArrayList<>(cities.stream().map(str -> str.getBytes(StandardCharsets.UTF_8)).toList());
 
         list.add(start.toString().getBytes(StandardCharsets.UTF_8));
@@ -190,16 +192,24 @@ public class Client implements Runnable {
 
         int tag = RESERVE.ordinal();
         demultiplexer.send(tag, list);
-        var response = demultiplexer.receive(tag);
 
-        if (checkError(response)) logger.info(response);
-        else {
-            logger.info("\nReserve with success!");
-            UUID id = UUID.fromString(new String(response.get(0), StandardCharsets.UTF_8));
-            logger.info("Reservation id: " + id);
-            return id;
-        }
-        return null;
+        new Thread(() -> {
+            try {
+                var response = demultiplexer.receive(tag);
+
+                if (checkError(response)) {
+                    logger.info(response);
+                    pendingNotifications.add("Error making reservation: " + cities);
+                } else {
+                    logger.info("\nReserve with success!");
+                    UUID id = UUID.fromString(new String(response.get(0), StandardCharsets.UTF_8));
+                    logger.info("Reservation id: " + id);
+                    pendingNotifications.add("Made reserevation with ID " + id + ": " + cities);
+                }
+            } catch (IOException | InterruptedException e) {
+                e.printStackTrace();
+            }
+        }).start();
     }
 
     protected void getRoutes() throws NotLoggedInException, IOException, InterruptedException {
@@ -345,6 +355,23 @@ public class Client implements Runnable {
         if (checkError(response)) printError(response);
         else logger.info("Password successfully changed!");
 
+    }
+
+    public void getNotifications() throws IOException, InterruptedException, NotLoggedInException {
+        if (!logged_in) throw new NotLoggedInException();
+
+        int tag = GET_NOTIFICATION.ordinal();
+        demultiplexer.send(tag, null);
+        var response = demultiplexer.receive(tag);
+
+        if (checkError(response)) printError(response);
+        else {
+            logger.info("Got Notifications successfully!");
+            out.println("General Notifications:");
+            response.stream().map(Notification::deserialize).forEach(out::println);
+        }
+        out.println("\nReservation Notifications:");
+        pendingNotifications.forEach(out::println);
     }
 
     protected boolean checkError(List<byte[]> response) {

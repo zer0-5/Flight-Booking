@@ -2,12 +2,14 @@ package system;
 
 import airport.PossiblePath;
 import airport.Reservation;
+import users.Notification;
 import airport.Route;
 import exceptions.*;
 import users.User;
 
 import java.time.LocalDate;
 import java.util.List;
+import java.util.Queue;
 import java.util.Set;
 import java.util.UUID;
 
@@ -121,4 +123,6 @@ public interface IAirportSystem {
         User user = authenticate(username, oldPassword);
         user.changePassword(newPassword);
     }
+
+    Queue<Notification> getNotificationsByUsername(String username) throws UserNotFoundException;
 }

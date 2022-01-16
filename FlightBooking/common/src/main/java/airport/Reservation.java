@@ -117,6 +117,10 @@ public class Reservation {
         return client;
     }
 
+    public String getUsernameClient() {
+        return client.getUsername();
+    }
+
     public Set<Flight> getFlights() {
         return new HashSet<>(flights);
     }
