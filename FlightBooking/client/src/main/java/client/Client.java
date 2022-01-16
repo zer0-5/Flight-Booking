@@ -37,10 +37,10 @@ public class Client implements Runnable {
         this.demultiplexer = new Demultiplexer(new TaggedConnection(new Socket(host, PORT))); // TODO: Repetir a conexão caso o server não esteja ligado.
         this.in = new Scanner(System.in);
         this.logged_in = false;
+        demultiplexer.start();
     }
 
     public void run() {
-        demultiplexer.start();
         try {
             boolean quit = false;
             while (!quit) {
@@ -128,7 +128,6 @@ public class Client implements Runnable {
         int tag = LOGIN.ordinal();
         demultiplexer.send(tag, args);
         var response = demultiplexer.receive(tag);
-
         if (checkError(response)) printError(response);
         else {
             out.println("Logged in!");
@@ -204,7 +203,7 @@ public class Client implements Runnable {
                     logger.info("\nReserve with success!");
                     UUID id = UUID.fromString(new String(response.get(0), StandardCharsets.UTF_8));
                     logger.info("Reservation id: " + id);
-                    pendingNotifications.add("Made reserevation with ID " + id + ": " + cities);
+                    pendingNotifications.add("Made reservation with ID " + id + ": " + cities);
                 }
             } catch (IOException | InterruptedException e) {
                 e.printStackTrace();
@@ -234,7 +233,12 @@ public class Client implements Runnable {
         out.print("Insert destination: ");
         String destination = in.nextLine();
 
-        getPathsBetween(origin, destination).forEach(e -> out.println(e.toStringPretty("")));
+
+        List<PossiblePath> paths = getPathsBetween(origin, destination);
+        if (paths != null)
+            paths.forEach(e -> out.println(e.toStringPretty("")));
+        else
+            out.println("Path not found!");
     }
 
     public List<PossiblePath> getPathsBetween(String origin, String destination) throws IOException, InterruptedException {
@@ -370,10 +374,13 @@ public class Client implements Runnable {
             out.println("General Notifications:");
             try {
                 response.stream().map(Notification::deserialize).forEach(out::println);
-            } catch (Exception ignored) {}
+            } catch (Exception ignored) {
+            }
         }
         out.println("\nReservation Notifications:");
-        pendingNotifications.forEach(out::println);
+
+        while (!pendingNotifications.isEmpty())
+            out.println(pendingNotifications.remove());
     }
 
     protected boolean checkError(List<byte[]> response) {

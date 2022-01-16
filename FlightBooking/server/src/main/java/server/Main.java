@@ -43,7 +43,8 @@ public class Main {
         //logger.info("Reservation with success with id: " + id);
         try {
             iAirportSystem.cancelDay(LocalDate.now());
-        } catch (DayAlreadyCanceledException ignored) {}
+        } catch (DayAlreadyCanceledException ignored) {
+        }
         return iAirportSystem;
     }
 

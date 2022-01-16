@@ -4,12 +4,8 @@ import airport.Flight;
 import airport.Reservation;
 import encryption.BCrypt;
 
-import java.util.HashSet;
-import java.util.Set;
-import java.util.UUID;
+import java.util.*;
 import java.util.concurrent.locks.ReentrantLock;
-import java.util.ArrayDeque;
-import java.util.Queue;
 
 
 /**
@@ -181,7 +177,7 @@ public class User {
         StringBuilder msg = new StringBuilder("[Reservation Cancelled] ");
         msg.append(reservation.id).append(" [FLIGHTS]: ");
         Set<Flight> flights = reservation.getFlights();
-        for (Flight flight: flights) {
+        for (Flight flight : flights) {
             msg.append(flight.route.origin);
             msg.append(" ; ");
         }

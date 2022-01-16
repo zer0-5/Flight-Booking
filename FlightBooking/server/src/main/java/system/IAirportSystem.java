@@ -2,9 +2,9 @@ package system;
 
 import airport.PossiblePath;
 import airport.Reservation;
-import users.Notification;
 import airport.Route;
 import exceptions.*;
+import users.Notification;
 import users.User;
 
 import java.time.LocalDate;

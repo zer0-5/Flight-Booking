@@ -32,13 +32,11 @@ public class Demultiplexer {
                         }
                         fv.queue.add(frame.data());
                         fv.c.signal();
-                    }
-                    finally {
+                    } finally {
                         l.unlock();
                     }
                 }
-            }
-            catch (IOException e) {
+            } catch (IOException e) {
                 exception = e;
             }
         }).start();
@@ -58,8 +56,8 @@ public class Demultiplexer {
                 map.put(tag, fv);
             }
             fv.waiters++;
-            while(true) {
-                if(!fv.queue.isEmpty()) {
+            while (true) {
+                if (!fv.queue.isEmpty()) {
                     fv.waiters--;
                     List<byte[]> reply = fv.queue.poll();
                     if (fv.waiters == 0 && fv.queue.isEmpty())
@@ -71,8 +69,7 @@ public class Demultiplexer {
                 }
                 fv.c.await();
             }
-        }
-        finally {
+        } finally {
             l.unlock();
         }
     }

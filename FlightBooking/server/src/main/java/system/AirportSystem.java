@@ -493,7 +493,7 @@ public class AirportSystem implements IAirportSystem {
     }
 
     private void addNotificationsToUsers(Set<Reservation> canceledReservations) {
-        for (Reservation reservation: canceledReservations) {
+        for (Reservation reservation : canceledReservations) {
             User user = getUserById(reservation.getUsernameClient());
             user.addCancelReservationNotifications(reservation);
         }
@@ -629,7 +629,7 @@ public class AirportSystem implements IAirportSystem {
     public Queue<Notification> getNotificationsByUsername(String username) throws UserNotFoundException {
         User user = getUserById(username);
         if (user == null)
-                throw new UserNotFoundException("User not found: " + username + " [username]");
+            throw new UserNotFoundException("User not found: " + username + " [username]");
         return user.removeAllNotification();
     }
 

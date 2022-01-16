@@ -40,7 +40,6 @@ public class Notification {
         bb.putInt(messageBytes.length);
         bb.put(messageBytes);
 
-        System.out.println(new String(bb.array()));
         return bb.array();
     }
 

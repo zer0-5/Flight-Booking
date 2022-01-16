@@ -94,8 +94,9 @@ public class ClientHandler implements Runnable {
 
     }
 
-    private void changePassword(List<byte[]> data) {
+    private void changePassword(List<byte[]> data) throws IOException {
         account.changePassword(new String(data.get(0)));
+        sendOk(CHANGE_PASSWORD.ordinal(), new ArrayList<>());
     }
 
     private void getReservations() throws IOException, UserNotFoundException, UserNotLoggedInException {

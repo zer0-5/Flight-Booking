@@ -20,7 +20,6 @@ public class Client extends User {
             super.lock.lock();
             if (this == o) return true;
             if (o == null || getClass() != o.getClass()) return false;
-            Client client = (Client) o;
             return super.equals(o);
         } finally {
             super.lock.unlock();
