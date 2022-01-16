@@ -44,10 +44,6 @@ public class Demultiplexer {
         }).start();
     }
 
-    public void send(Frame frame) throws IOException {
-        conn.send(frame);
-    }
-
     public void send(int tag, List<byte[]> data) throws IOException {
         conn.send(tag, data);
     }

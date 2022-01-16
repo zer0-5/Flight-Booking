@@ -27,7 +27,8 @@ public class Main {
 
         iAirportSystem.registerAdmin("admin", "admin");
         User user = iAirportSystem.registerClient("1", "1");
-        logger.info("Client with success with id: " + user.getUsername());
+        User user2 = iAirportSystem.registerClient("2", "2");
+        //logger.info("Client with success with id: " + user.getUsername());
         iAirportSystem.addRoute("Porto", "Lisbon", 200);
         iAirportSystem.addRoute("Lisbon", "London", 200);
         iAirportSystem.addRoute("London", "Faro", 200);
@@ -38,11 +39,11 @@ public class Main {
         cities.add("London");
 
         UUID id = iAirportSystem.reserveFlight(user.getUsername(), cities, LocalDate.now(), LocalDate.now().plusDays(10));
-        logger.info("Reservation with success with id: " + id);
+        UUID id2 = iAirportSystem.reserveFlight(user2.getUsername(), cities, LocalDate.now().plusDays(2), LocalDate.now().plusDays(10));
+        //logger.info("Reservation with success with id: " + id);
         try {
             iAirportSystem.cancelDay(LocalDate.now());
         } catch (DayAlreadyCanceledException ignored) {}
-        //var ola = iAirportSystem.getNotificationsByUsername("1");
         return iAirportSystem;
     }
 

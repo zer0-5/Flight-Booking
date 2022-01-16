@@ -31,7 +31,7 @@ public class Client implements Runnable {
     private final Scanner in; // From console
     private boolean logged_in;
 
-    private Queue<String> pendingNotifications = new ArrayDeque<>();
+    private final Queue<String> pendingNotifications = new ArrayDeque<>();
 
     public Client() throws IOException {
         this.demultiplexer = new Demultiplexer(new TaggedConnection(new Socket(host, PORT))); // TODO: Repetir a conexão caso o server não esteja ligado.
@@ -368,7 +368,9 @@ public class Client implements Runnable {
         else {
             logger.info("Got Notifications successfully!");
             out.println("General Notifications:");
-            response.stream().map(Notification::deserialize).forEach(out::println);
+            try {
+                response.stream().map(Notification::deserialize).forEach(out::println);
+            } catch (Exception ignored) {}
         }
         out.println("\nReservation Notifications:");
         pendingNotifications.forEach(out::println);
