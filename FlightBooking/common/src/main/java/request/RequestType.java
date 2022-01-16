@@ -18,6 +18,8 @@ public enum RequestType {
     GET_RESERVATIONS,
     RESERVE,
     CANCEL_RESERVATION,
+
+    GET_NOTIFICATION,
     ;
 
 

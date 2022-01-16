@@ -9,6 +9,7 @@ import org.apache.logging.log4j.Logger;
 import request.RequestType;
 import system.IAirportSystem;
 import users.Admin;
+import users.Notification;
 import users.User;
 
 import java.io.IOException;
@@ -56,13 +57,15 @@ public class ClientHandler implements Runnable {
                         case CANCEL_DAY -> cancelDay(data);
                         case INSERT_ROUTE -> insertRoute(data);
 
-                        case GET_ROUTES -> getRoutes(data);
+                        case GET_ROUTES -> getRoutes();
                         case GET_RESERVATIONS -> getReservations();
                         case GET_PATHS_BETWEEN -> getPathsBetween(data);
                         case RESERVE -> reserve(data);
                         case CANCEL_RESERVATION -> cancelReservation(data);
-                        case LOGOUT -> logout(data);
+                        case LOGOUT -> logout();
                         case CHANGE_PASSWORD -> changePassword(data);
+
+                        case GET_NOTIFICATION -> getNotification();
                     }
 
                     logger.info("Request with type " + RequestType.getRequestType(frame.tag()) + " has been successfully handled!");
@@ -99,7 +102,7 @@ public class ClientHandler implements Runnable {
         if (!isLoggedIn()) throw new UserNotLoggedInException();
         Set<Reservation> reservations = airportSystem.getReservationsFromClient(account.getUsername());
 
-        sendOk(CANCEL_RESERVATION.ordinal(), reservations.stream().map(Reservation::serialize).collect(Collectors.toList()));
+        sendOk(GET_RESERVATIONS.ordinal(), reservations.stream().map(Reservation::serialize).collect(Collectors.toList()));
     }
 
     private void cancelReservation(List<byte[]> data) throws ReservationNotFoundException,
@@ -129,8 +132,13 @@ public class ClientHandler implements Runnable {
         sendOk(RESERVE.ordinal(), list);
     }
 
-    private void getRoutes(List<byte[]> data) throws IOException {
+    private void getRoutes() throws IOException {
         sendOk(GET_ROUTES.ordinal(), airportSystem.getRoutes().stream().map(Route::serialize).collect(Collectors.toList()));
+    }
+
+    private void getNotification() throws IOException, UserNotFoundException {
+        var all = airportSystem.getNotificationsByUsername(account.getUsername());
+        sendOk(GET_NOTIFICATION.ordinal(), all.stream().map(Notification::serialize).collect(Collectors.toList()));
     }
 
     private void getPathsBetween(List<byte[]> data) throws RouteDoesntExistException, IOException {
@@ -171,7 +179,7 @@ public class ClientHandler implements Runnable {
         sendOk(LOGIN.ordinal(), new ArrayList<>());
     }
 
-    private void logout(List<byte[]> data) throws IOException {
+    private void logout() throws IOException {
         account = null;
         sendOk(LOGOUT.ordinal(), new ArrayList<>());
     }

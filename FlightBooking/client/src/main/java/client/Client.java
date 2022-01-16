@@ -8,19 +8,16 @@ import exceptions.AlreadyLoggedInException;
 import exceptions.NotLoggedInException;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import users.Notification;
 
 import java.io.IOException;
 import java.net.Socket;
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 import java.time.LocalDate;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Scanner;
-import java.util.UUID;
+import java.util.*;
 import java.util.stream.Collectors;
 
-import static connection.TaggedConnection.Frame;
 import static java.lang.System.out;
 import static request.RequestType.*;
 
@@ -30,17 +27,20 @@ public class Client implements Runnable {
     private static final String host = "localhost";
     private static final int PORT = 12345; // TODO: Mudar isto dps!
 
-    protected final TaggedConnection taggedConnection;
+    private final Demultiplexer demultiplexer;
     private final Scanner in; // From console
     private boolean logged_in;
 
+    private Queue<String> pendingNotifications = new ArrayDeque<>();
+
     public Client() throws IOException {
-        this.taggedConnection = new TaggedConnection(new Socket(host, PORT)); // TODO: Repetir a conexão caso o server não esteja ligado.
+        this.demultiplexer = new Demultiplexer(new TaggedConnection(new Socket(host, PORT))); // TODO: Repetir a conexão caso o server não esteja ligado.
         this.in = new Scanner(System.in);
         this.logged_in = false;
     }
 
     public void run() {
+        demultiplexer.start();
         try {
             boolean quit = false;
             while (!quit) {
@@ -65,6 +65,8 @@ public class Client implements Runnable {
                         case CANCEL_RESERVATION -> cancelReservationIO();
                         case LOGOUT -> logout();
                         case CHANGE_PASSWORD -> changePasswordIO();
+
+                        case GET_NOTIFICATION -> getNotifications();
                     }
                     out.println();
                 } catch (Exception e) {
@@ -72,18 +74,16 @@ public class Client implements Runnable {
                 }
             }
 
-            taggedConnection.close();
-        } catch (NotLoggedInException e) {
-            out.println(e.getMessage());
+            demultiplexer.close();
         } catch (Exception e) {
             e.printStackTrace();
         }
     }
 
-    private void logout() throws IOException {
-        taggedConnection.send(LOGOUT.ordinal(), new ArrayList<>());
-
-        Frame response = taggedConnection.receive();
+    private void logout() throws IOException, InterruptedException {
+        int tag = LOGOUT.ordinal();
+        demultiplexer.send(tag, null);
+        var response = demultiplexer.receive(tag);
 
         if (checkError(response)) printError(response);
         else {
@@ -92,20 +92,20 @@ public class Client implements Runnable {
         }
     }
 
-    public void getReservations() throws IOException {
-        taggedConnection.send(GET_RESERVATIONS.ordinal(), new ArrayList<>());
-
-        Frame response = taggedConnection.receive();
+    public void getReservations() throws IOException, InterruptedException {
+        int tag = GET_RESERVATIONS.ordinal();
+        demultiplexer.send(tag, null);
+        var response = demultiplexer.receive(tag);
 
         out.println("Reservations: ");
-        response.data().stream().map(Reservation::deserialize).forEach(out::println);
+        response.stream().map(Reservation::deserialize).forEach(out::println);
     }
 
     public void quit() throws IOException {
-        taggedConnection.send(EXIT.ordinal(), new ArrayList<>());
+        demultiplexer.send(EXIT.ordinal(), null);
     }
 
-    private void loginIO() throws AlreadyLoggedInException, IOException {
+    private void loginIO() throws AlreadyLoggedInException, IOException, InterruptedException {
         if (logged_in) throw new AlreadyLoggedInException();
 
         out.print("Insert username: ");
@@ -119,15 +119,15 @@ public class Client implements Runnable {
      * Sends one request to the server with the username and password.
      * Then, it waits for a response, and handles it.
      */
-    public void login(String username, String password) throws IOException {
-        List<byte[]> args = new ArrayList<>();
+    public void login(String username, String password) throws IOException, InterruptedException {
+        List<byte[]> args = new ArrayList<>(2);
 
         args.add(username.getBytes(StandardCharsets.UTF_8));
         args.add(password.getBytes(StandardCharsets.UTF_8));
 
-        taggedConnection.send(LOGIN.ordinal(), args);
-
-        Frame response = taggedConnection.receive();
+        int tag = LOGIN.ordinal();
+        demultiplexer.send(tag, args);
+        var response = demultiplexer.receive(tag);
 
         if (checkError(response)) printError(response);
         else {
@@ -136,7 +136,7 @@ public class Client implements Runnable {
         }
     }
 
-    private void cancelReservationIO() throws NotLoggedInException, IOException {
+    private void cancelReservationIO() throws NotLoggedInException, IOException, InterruptedException {
         if (!logged_in) throw new NotLoggedInException();
 
         out.print("Insert the id of the reservation: ");
@@ -145,22 +145,23 @@ public class Client implements Runnable {
         cancelReservation(UUID.fromString(id));
     }
 
-    public void cancelReservation(UUID reservationId) throws IOException {
-        List<byte[]> list = new ArrayList<>();
+    public void cancelReservation(UUID reservationId) throws IOException, InterruptedException {
+        List<byte[]> list = new ArrayList<>(1);
         list.add(reservationId.toString().getBytes(StandardCharsets.UTF_8));
-        taggedConnection.send(CANCEL_RESERVATION.ordinal(), list);
 
-        Frame response = taggedConnection.receive();
+        int tag = CANCEL_RESERVATION.ordinal();
+        demultiplexer.send(tag, list);
+        var response = demultiplexer.receive(tag);
 
         if (checkError(response)) printError(response);
         else {
-            logger.info("Cancel reservation with success!");
-            logger.info(Reservation.deserialize(response.data().get(0)));
+            logger.info("Reservation cancelled with success!");
+            logger.info(Reservation.deserialize(response.get(0)));
         }
     }
 
 
-    private void reserveIO() throws NotLoggedInException, IOException {
+    private void reserveIO() throws NotLoggedInException, IOException, InterruptedException {
         if (!logged_in) throw new NotLoggedInException();
 
         List<String> cities = new ArrayList<>();
@@ -180,45 +181,52 @@ public class Client implements Runnable {
         out.print("Insert the end date with the following format \"2007-12-03\": ");
         LocalDate end = LocalDate.parse(in.nextLine());
 
-        out.println("Reservation id: " + reserve(cities, start, end));
+        reserve(cities, start, end);
     }
 
-    public UUID reserve(List<String> cities, LocalDate start, LocalDate end) throws IOException {
+    public void reserve(List<String> cities, LocalDate start, LocalDate end) throws IOException, InterruptedException {
         List<byte[]> list = new ArrayList<>(cities.stream().map(str -> str.getBytes(StandardCharsets.UTF_8)).toList());
 
         list.add(start.toString().getBytes(StandardCharsets.UTF_8));
         list.add(end.toString().getBytes(StandardCharsets.UTF_8));
 
-        taggedConnection.send(RESERVE.ordinal(), list);
+        int tag = RESERVE.ordinal();
+        demultiplexer.send(tag, list);
 
-        Frame response = taggedConnection.receive();
+        new Thread(() -> {
+            try {
+                var response = demultiplexer.receive(tag);
 
-        if (checkError(response)) logger.info(response);
-        else {
-            logger.info("\nReserve with success!");
-            UUID id = UUID.fromString(new String(response.data().get(0), StandardCharsets.UTF_8));
-            logger.info("Reservation id: " + id);
-            return id;
-        }
-        return null;
+                if (checkError(response)) {
+                    logger.info(response);
+                    pendingNotifications.add("Error making reservation: " + cities);
+                } else {
+                    logger.info("\nReserve with success!");
+                    UUID id = UUID.fromString(new String(response.get(0), StandardCharsets.UTF_8));
+                    logger.info("Reservation id: " + id);
+                    pendingNotifications.add("Made reserevation with ID " + id + ": " + cities);
+                }
+            } catch (IOException | InterruptedException e) {
+                e.printStackTrace();
+            }
+        }).start();
     }
 
-    protected void getRoutes() throws NotLoggedInException, IOException {
+    protected void getRoutes() throws NotLoggedInException, IOException, InterruptedException {
         if (!logged_in) throw new NotLoggedInException();
 
-        List<byte[]> list = new ArrayList<>();
-        taggedConnection.send(GET_ROUTES.ordinal(), list);
-
-        Frame response = taggedConnection.receive();
+        int tag = GET_ROUTES.ordinal();
+        demultiplexer.send(tag, null);
+        var response = demultiplexer.receive(tag);
 
         if (checkError(response)) printError(response);
         else {
             logger.info("Get routes with success!");
-            response.data().stream().map(Route::deserialize).forEach(out::println);
+            response.stream().map(Route::deserialize).forEach(out::println);
         }
     }
 
-    private void getPathsBetweenIO() throws NotLoggedInException, IOException {
+    private void getPathsBetweenIO() throws NotLoggedInException, IOException, InterruptedException {
         if (!logged_in) throw new NotLoggedInException();
 
         out.print("Insert origin: ");
@@ -226,30 +234,28 @@ public class Client implements Runnable {
         out.print("Insert destination: ");
         String destination = in.nextLine();
 
-        getPathsBetween(origin, destination);
-
         getPathsBetween(origin, destination).forEach(e -> out.println(e.toStringPretty("")));
     }
 
-    public List<PossiblePath> getPathsBetween(String origin, String destination) throws IOException {
-        List<byte[]> args = new ArrayList<>();
+    public List<PossiblePath> getPathsBetween(String origin, String destination) throws IOException, InterruptedException {
+        List<byte[]> args = new ArrayList<>(2);
 
         args.add(origin.getBytes(StandardCharsets.UTF_8));
         args.add(destination.getBytes(StandardCharsets.UTF_8));
 
-        taggedConnection.send(GET_PATHS_BETWEEN.ordinal(), args);
-
-        Frame response = taggedConnection.receive();
+        int tag = GET_PATHS_BETWEEN.ordinal();
+        demultiplexer.send(tag, args);
+        var response = demultiplexer.receive(tag);
 
         if (checkError(response)) printError(response);
         else {
             logger.info("Get Possible Path with success!");
-            return response.data().stream().map(PossiblePath::deserialize).collect(Collectors.toList());
+            return response.stream().map(PossiblePath::deserialize).collect(Collectors.toList());
         }
         return null;
     }
 
-    private void insertRouteIO() throws NotLoggedInException, IOException {
+    private void insertRouteIO() throws NotLoggedInException, IOException, InterruptedException {
         if (!logged_in) throw new NotLoggedInException();
 
         out.print("Insert origin route: ");
@@ -264,22 +270,22 @@ public class Client implements Runnable {
         insertRoute(origin, destination, capacity);
     }
 
-    public void insertRoute(String origin, String destination, int capacity) throws IOException {
-        List<byte[]> list = new ArrayList<>();
+    public void insertRoute(String origin, String destination, int capacity) throws IOException, InterruptedException {
+        List<byte[]> list = new ArrayList<>(3);
 
         list.add(origin.getBytes(StandardCharsets.UTF_8));
         list.add(destination.getBytes(StandardCharsets.UTF_8));
         list.add(ByteBuffer.allocate(Integer.BYTES).putInt(capacity).array());
 
-        taggedConnection.send(INSERT_ROUTE.ordinal(), list);
-
-        Frame response = taggedConnection.receive();
+        int tag = INSERT_ROUTE.ordinal();
+        demultiplexer.send(tag, list);
+        var response = demultiplexer.receive(tag);
 
         if (checkError(response)) printError(response);
         else logger.info("Route successfully inserted!");
     }
 
-    private void cancelDayIO() throws NotLoggedInException, IOException {
+    private void cancelDayIO() throws NotLoggedInException, IOException, InterruptedException {
         if (!logged_in) throw new NotLoggedInException();
 
         out.print("Insert the end date with the following format \"2007-12-03\": ");
@@ -288,20 +294,20 @@ public class Client implements Runnable {
         cancelDay(day);
     }
 
-    public void cancelDay(LocalDate day) throws IOException {
-        List<byte[]> list = new ArrayList<>();
+    public void cancelDay(LocalDate day) throws IOException, InterruptedException {
+        List<byte[]> list = new ArrayList<>(1);
 
         list.add(day.toString().getBytes(StandardCharsets.UTF_8));
 
-        taggedConnection.send(CANCEL_DAY.ordinal(), list);
-
-        Frame response = taggedConnection.receive();
+        int tag = CANCEL_DAY.ordinal();
+        demultiplexer.send(tag, list);
+        var response = demultiplexer.receive(tag);
 
         if (checkError(response)) printError(response);
         else logger.info("Day successfully cancelled!");
     }
 
-    private void registerIO() throws IOException, AlreadyLoggedInException {
+    private void registerIO() throws IOException, AlreadyLoggedInException, InterruptedException {
         if (logged_in) throw new AlreadyLoggedInException();
 
         out.print("Insert username: ");
@@ -313,22 +319,22 @@ public class Client implements Runnable {
         register(username, password);
     }
 
-    public void register(String username, String password) throws IOException {
-        List<byte[]> list = new ArrayList<>();
+    public void register(String username, String password) throws IOException, InterruptedException {
+        List<byte[]> list = new ArrayList<>(2);
 
         list.add(username.getBytes(StandardCharsets.UTF_8));
         list.add(password.getBytes(StandardCharsets.UTF_8));
 
-        taggedConnection.send(REGISTER.ordinal(), list);
-
-        Frame response = taggedConnection.receive();
+        int tag = REGISTER.ordinal();
+        demultiplexer.send(tag, list);
+        var response = demultiplexer.receive(tag);
 
         if (checkError(response)) printError(response);
         else logger.info("Account successfully registered!");
     }
 
 
-    private void changePasswordIO() throws NotLoggedInException, IOException {
+    private void changePasswordIO() throws NotLoggedInException, IOException, InterruptedException {
         if (!logged_in) throw new NotLoggedInException();
 
         out.print("Insert new password: ");
@@ -337,28 +343,45 @@ public class Client implements Runnable {
         changePassword(password);
     }
 
-    public void changePassword(String password) throws IOException {
-        List<byte[]> list = new ArrayList<>();
+    public void changePassword(String password) throws IOException, InterruptedException {
+        List<byte[]> list = new ArrayList<>(1);
 
         list.add(password.getBytes(StandardCharsets.UTF_8));
 
-        taggedConnection.send(CHANGE_PASSWORD.ordinal(), list);
-
-        Frame response = taggedConnection.receive();
+        int tag = CHANGE_PASSWORD.ordinal();
+        demultiplexer.send(tag, list);
+        var response = demultiplexer.receive(tag);
 
         if (checkError(response)) printError(response);
         else logger.info("Password successfully changed!");
 
     }
 
-    protected boolean checkError(Frame frame) {
-        return new String(frame.data().get(0)).equals("ERROR");
+    public void getNotifications() throws IOException, InterruptedException, NotLoggedInException {
+        if (!logged_in) throw new NotLoggedInException();
+
+        int tag = GET_NOTIFICATION.ordinal();
+        demultiplexer.send(tag, null);
+        var response = demultiplexer.receive(tag);
+
+        if (checkError(response)) printError(response);
+        else {
+            logger.info("Got Notifications successfully!");
+            out.println("General Notifications:");
+            response.stream().map(Notification::deserialize).forEach(out::println);
+        }
+        out.println("\nReservation Notifications:");
+        pendingNotifications.forEach(out::println);
     }
 
-    private void printError(Frame frame) {
+    protected boolean checkError(List<byte[]> response) {
+        return new String(response.get(0)).equals("ERROR");
+    }
+
+    private void printError(List<byte[]> response) {
         out.println();
-        for (int i = 1; i < frame.data().size(); i++) {
-            out.println(new String(frame.data().get(i)));
+        for (int i = 1; i < response.size(); i++) {
+            out.println(new String(response.get(i)));
         }
         // out.println("Error with the request: " + frame.data().stream().map(String::new).collect(Collectors.joining(" ")));
     }

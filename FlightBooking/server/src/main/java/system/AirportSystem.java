@@ -8,6 +8,7 @@ import exceptions.*;
 import locks.LockObject;
 import users.Admin;
 import users.Client;
+import users.Notification;
 import users.User;
 
 import java.time.LocalDate;
@@ -484,9 +485,17 @@ public class AirportSystem implements IAirportSystem {
                 }
             }
             cancelReservation(canceledReservations);
+            addNotificationsToUsers(canceledReservations);
             return canceledReservations;
         } finally {
             flightsOneDayWithLock.writeUnlock();
+        }
+    }
+
+    private void addNotificationsToUsers(Set<Reservation> canceledReservations) {
+        for (Reservation reservation: canceledReservations) {
+            User user = getUserById(reservation.getUsernameClient());
+            user.addCancelReservationNotifications(reservation);
         }
     }
 
@@ -616,6 +625,17 @@ public class AirportSystem implements IAirportSystem {
             this.lockReservations.unlock();
         }
     }
+
+    public Queue<Notification> getNotificationsByUsername(String username) throws UserNotFoundException {
+        User user = getUserById(username);
+        if (user == null)
+                throw new UserNotFoundException("User not found: " + username + " [username]");
+        return user.removeAllNotification();
+    }
+
+    //public Reservation getReservation(UUID resID){
+    //    return this.reservationsById.get(resID);
+    //}
 
     public PossiblePath getPathsBetween(String from, String dest) throws RouteDoesntExistException {
         try {
