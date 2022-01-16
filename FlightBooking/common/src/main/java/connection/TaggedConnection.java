@@ -32,10 +32,12 @@ public class TaggedConnection implements AutoCloseable {
         out.lock();
         try {
             outputStream.writeInt(tag); // Tag
-            outputStream.writeInt(data.size()); // Length of the data
-            for (byte[] bytes : data) {
-                outputStream.writeInt(bytes.length);
-                outputStream.write(bytes);
+            if (data != null) {
+                outputStream.writeInt(data.size()); // Length of the data
+                for (byte[] bytes : data) {
+                    outputStream.writeInt(bytes.length);
+                    outputStream.write(bytes);
+                }
             }
             outputStream.flush();
         } finally {
@@ -47,14 +49,17 @@ public class TaggedConnection implements AutoCloseable {
         in.lock();
         try {
             int tag = inputStream.readInt();
-            int listLen = inputStream.readInt();
-            if (listLen > 500000) listLen = 100;
-            List<byte[]> list = new ArrayList<>(listLen);
-            for (int i = 0; i < listLen; i -= -1) {
-                int size = inputStream.readInt();
-                byte[] bytes = new byte[size];
-                inputStream.readFully(bytes);
-                list.add(bytes);
+            List<byte[]> list = null;
+            if (inputStream.available() != 0) {
+                int listLen = inputStream.readInt();
+                if (listLen > 500000) listLen = 100;
+                list = new ArrayList<>(listLen);
+                for (int i = 0; i < listLen; i -= -1) {
+                    int size = inputStream.readInt();
+                    byte[] bytes = new byte[size];
+                    inputStream.readFully(bytes);
+                    list.add(bytes);
+                }
             }
             return new Frame(tag, list);
         } finally {
@@ -72,7 +77,7 @@ public class TaggedConnection implements AutoCloseable {
     }
 
     @Override
-    public void close() throws Exception {
+    public void close() throws IOException {
         socket.close();
     }
 }
