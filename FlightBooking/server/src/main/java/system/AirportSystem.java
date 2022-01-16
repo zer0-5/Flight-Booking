@@ -59,8 +59,7 @@ public class AirportSystem implements IAirportSystem {
      * Associates each reservation to his id.
      */
     private final Map<UUID, Reservation> reservationsById;
-    private final Lock readLockReservations;
-    private final Lock writeLockReservations;
+    private final Lock lockReservations;
 
     /**
      * Constructor.
@@ -90,9 +89,7 @@ public class AirportSystem implements IAirportSystem {
         this.readLockCanceledDays = lockCanceledDays.readLock();
         this.writeLockCanceledDays = lockCanceledDays.readLock();
 
-        ReentrantReadWriteLock lockReservations = new ReentrantReadWriteLock();
-        this.readLockReservations = lockReservations.readLock();
-        this.writeLockReservations = lockReservations.writeLock();
+        this.lockReservations = new ReentrantLock();
     }
 
     /**
@@ -417,10 +414,10 @@ public class AirportSystem implements IAirportSystem {
         // Set<UUID> flightIds = flights.stream().map(e -> e.id).collect(Collectors.toSet());
         Reservation reservation = new Reservation(user, flights);
         try {
-            writeLockReservations.lock();
+            lockReservations.lock();
             reservationsById.put(reservation.id, reservation);
         } finally {
-            writeLockReservations.unlock();
+            lockReservations.unlock();
         }
         user.addReservation(reservation.id);
 
@@ -455,10 +452,10 @@ public class AirportSystem implements IAirportSystem {
 
         Reservation reservation;
         try {
-            writeLockReservations.lock();
+            lockReservations.lock();
             reservation = this.reservationsById.remove(reservationId);
         } finally {
-            writeLockReservations.unlock();
+            lockReservations.unlock();
         }
 
         if (reservation == null) {
@@ -469,21 +466,21 @@ public class AirportSystem implements IAirportSystem {
 
         if (user == null) {
             try {
-                writeLockReservations.lock();
+                lockReservations.lock();
                 this.reservationsById.put(reservationId, reservation);
                 throw new UserNotFoundException("User not found: " + userName + " [username]");
             } finally {
-                writeLockReservations.unlock();
+                lockReservations.unlock();
             }
         }
 
         if (!user.containsReservation(reservationId)) {
             try {
-                writeLockReservations.lock();
+                lockReservations.lock();
                 this.reservationsById.put(reservation.id, reservation);
                 throw new ReservationDoesNotBelongToTheClientException(reservationId, userName);
             } finally {
-                writeLockReservations.unlock();
+                lockReservations.unlock();
             }
         }
 
@@ -494,12 +491,12 @@ public class AirportSystem implements IAirportSystem {
 
     private void cancelReservation(Set<Reservation> reservations) {
         try {
-            this.readLockReservations.lock();
+            this.lockReservations.lock();
             for (Reservation reservation : reservations) {
                 this.reservationsById.remove(reservation.id);
             }
         } finally {
-            this.readLockReservations.unlock();
+            this.lockReservations.unlock();
         }
     }
 
@@ -677,7 +674,7 @@ public class AirportSystem implements IAirportSystem {
 
         Set<Reservation> list = new HashSet<>();
         try {
-            this.readLockReservations.lock();
+            this.lockReservations.lock();
             for (UUID id : reservations) {
                 Reservation r = this.reservationsById.get(id);
                 if (r != null)
@@ -685,7 +682,7 @@ public class AirportSystem implements IAirportSystem {
             }
             return list;
         } finally {
-            this.readLockReservations.unlock();
+            this.lockReservations.unlock();
         }
     }
 
