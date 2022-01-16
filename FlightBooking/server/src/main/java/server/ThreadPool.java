@@ -31,7 +31,7 @@ public class ThreadPool {
         @Override
         public void run() {
             Runnable task;
-            while(!shutdownSignal) {
+            while (!shutdownSignal) {
                 try {
                     task = queue.get();
                 } catch (InterruptedException e) {
